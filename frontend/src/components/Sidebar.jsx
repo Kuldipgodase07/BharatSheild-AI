@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileText, Users, AlertTriangle, Menu, X, ShieldAlert, LogOut, Settings, BrainCircuit, BarChart2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +14,46 @@ const SIDEBAR_BG = 'rgba(6, 8, 22, 0.98)';
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const [engineStatus, setEngineStatus] = useState({
+    version: 'v2.4',
+    accuracy: 99.4,
+    status: 'All Systems Operational'
+  });
+  const [engineConnected, setEngineConnected] = useState(false);
+
+  useEffect(() => {
+    const wsUrl = import.meta.env.VITE_AI_WS_URL || 'ws://localhost:8000/ws/ai-engine';
+    let ws;
+    let reconnectTimer;
+
+    const connect = () => {
+      ws = new WebSocket(wsUrl);
+      ws.onopen = () => setEngineConnected(true);
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setEngineStatus((prev) => ({ ...prev, ...data }));
+        } catch {
+          // Ignore malformed messages
+        }
+      };
+      ws.onclose = () => {
+        setEngineConnected(false);
+        reconnectTimer = setTimeout(connect, 2000);
+      };
+      ws.onerror = () => {
+        setEngineConnected(false);
+        ws.close();
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+    };
+  }, []);
 
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -117,14 +157,18 @@ export default function Sidebar() {
           >
             <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-3xl" style={{ background: 'rgba(99,102,241,0.3)' }} />
             <BrainCircuit className="w-5 h-5 text-indigo-400 mb-3" />
-            <p className="text-xs font-black text-white mb-0.5">AI Engine · v2.4</p>
-            <p className="text-[10px] text-slate-600 leading-relaxed mb-3">Neural fraud patterns updated. Accuracy: 99.4%</p>
+            <p className="text-xs font-black text-white mb-0.5">AI Engine {engineStatus.version || 'v2.4'}</p>
+            <p className="text-[10px] text-slate-600 leading-relaxed mb-3">
+              Neural fraud patterns updated. Accuracy: {engineStatus.accuracy != null ? `${engineStatus.accuracy}%` : 'N/A'}
+            </p>
             <div className="flex items-center gap-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" style={{ boxShadow: '0 0 8px #10b981' }} />
               </span>
-              <span className="text-[10px] font-bold text-emerald-400">All Systems Operational</span>
+              <span className="text-[10px] font-bold text-emerald-400">
+                {engineConnected ? (engineStatus.status || 'All Systems Operational') : 'Connecting...'}
+              </span>
             </div>
           </motion.div>
 

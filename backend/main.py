@@ -1,12 +1,21 @@
-from fastapi import FastAPI, Depends, HTTPException
+﻿from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Optional, Any
 from pydantic import BaseModel
 import models
 from database import engine, get_db
 from datetime import datetime
-from fraud_detection_model import predict_fraud, predict_anomaly
+import asyncio
+import os
+import json
+from fraud_detection_model import (
+    predict_fraud,
+    predict_anomaly,
+    predict_fraud_ensemble,
+    predict_text_fraud,
+    verify_document
+)
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -88,6 +97,13 @@ class FraudPredictionResponse(BaseModel):
     fraud_probability: float
     risk_score: int
 
+class EnsembleFraudPredictionResponse(BaseModel):
+    is_fraud: bool
+    fraud_probability: float
+    risk_score: int
+    supervised_models: Dict[str, float]
+    anomaly_models: Dict[str, Any]
+
 class AnomalyDetectionRequest(BaseModel):
     age: int
     claim_amount: float
@@ -103,6 +119,87 @@ class AnomalyDetectionResponse(BaseModel):
     threshold: float
     anomaly_score: float
 
+class TextFraudRequest(BaseModel):
+    text: str
+
+class TextFraudResponse(BaseModel):
+    is_fraud: bool
+    fraud_probability: float
+    risk_score: int
+
+class DocumentVerifyRequest(BaseModel):
+    image_path: str
+    reference_path: Optional[str] = None
+
+class DocumentVerifyResponse(BaseModel):
+    cnn_score: Optional[float]
+    template_similarity: Optional[float]
+    is_fraud: Optional[bool]
+    risk_score: Optional[int]
+
+BASE_DIR = os.path.dirname(__file__)
+MODEL_STATUS_PATH = os.path.join(BASE_DIR, 'model_status.json')
+
+def _latest_model_mtime():
+    model_files = [
+        os.path.join(BASE_DIR, 'fraud_detection_model.pkl'),
+        os.path.join(BASE_DIR, 'logistic_fraud_model.pkl'),
+        os.path.join(BASE_DIR, 'xgboost_fraud_model.pkl'),
+        os.path.join(BASE_DIR, 'isolation_forest_model.pkl'),
+        os.path.join(BASE_DIR, 'one_class_svm_model.pkl'),
+        os.path.join(BASE_DIR, 'autoencoder_model.keras'),
+        os.path.join(BASE_DIR, 'text_fraud_model.pkl'),
+        MODEL_STATUS_PATH
+    ]
+    mtimes = []
+    for f in model_files:
+        if os.path.exists(f):
+            mtimes.append(os.path.getmtime(f))
+    return max(mtimes) if mtimes else None
+
+def read_model_status():
+    status = {
+        'version': 'v2.4',
+        'status': 'Initializing',
+        'accuracy': None,
+        'models': {
+            'random_forest': os.path.exists(os.path.join(BASE_DIR, 'fraud_detection_model.pkl')),
+            'logistic_regression': os.path.exists(os.path.join(BASE_DIR, 'logistic_fraud_model.pkl')),
+            'xgboost': os.path.exists(os.path.join(BASE_DIR, 'xgboost_fraud_model.pkl')),
+            'isolation_forest': os.path.exists(os.path.join(BASE_DIR, 'isolation_forest_model.pkl')),
+            'one_class_svm': os.path.exists(os.path.join(BASE_DIR, 'one_class_svm_model.pkl')),
+            'autoencoder': os.path.exists(os.path.join(BASE_DIR, 'autoencoder_model.keras')),
+            'text_model': os.path.exists(os.path.join(BASE_DIR, 'text_fraud_model.pkl'))
+        }
+    }
+
+    if os.path.exists(MODEL_STATUS_PATH):
+        try:
+            with open(MODEL_STATUS_PATH, 'r', encoding='utf-8') as f:
+                stored = json.load(f)
+            status.update({k: v for k, v in stored.items() if k != 'models'})
+            if isinstance(stored.get('models'), dict):
+                status['models'].update(stored['models'])
+        except Exception:
+            pass
+
+    latest_mtime = _latest_model_mtime()
+    if latest_mtime:
+        status['updated_at'] = datetime.utcfromtimestamp(latest_mtime).isoformat(timespec='seconds') + 'Z'
+
+    core_ok = all([
+        status['models'].get('random_forest'),
+        status['models'].get('logistic_regression'),
+        status['models'].get('isolation_forest'),
+        status['models'].get('one_class_svm'),
+        status['models'].get('autoencoder'),
+        status['models'].get('text_model')
+    ])
+    if core_ok and not status.get('status'):
+        status['status'] = 'All Systems Operational'
+
+    return status
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Insurance Fraud Detection API"}
@@ -110,7 +207,6 @@ def read_root():
 @app.get("/alerts", response_model=List[AlertSchema])
 def get_alerts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     alerts = db.query(models.Alert).offset(skip).limit(limit).all()
-    # If empty, return mock data for frontend testing
     if not alerts:
         return [
             { "id": "ALT-9812", "claim_id": "CLM-1092", "fraud_type": "Claim Inflation", "risk_score": 94, "status": "Open", "policy_holder": "John Doe", "amount": 15400.0 },
@@ -140,7 +236,6 @@ def get_policies(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
 
 @app.get("/analytics", response_model=AnalyticsSchema)
 def get_analytics(db: Session = Depends(get_db)):
-    # Mock analytics data
     return {
         "total_claims": 1247,
         "approved_claims": 892,
@@ -167,6 +262,21 @@ def predict_fraud_endpoint(request: FraudPredictionRequest):
         raise HTTPException(status_code=500, detail="Model not trained or files missing")
     return result
 
+@app.post("/predict-fraud-ensemble", response_model=EnsembleFraudPredictionResponse)
+def predict_fraud_ensemble_endpoint(request: FraudPredictionRequest):
+    result = predict_fraud_ensemble(
+        age=request.age,
+        claim_amount=request.claim_amount,
+        policy_type=request.policy_type,
+        incident_type=request.incident_type,
+        claim_history=request.claim_history,
+        policy_duration=request.policy_duration,
+        deductible=request.deductible
+    )
+    if result is None:
+        raise HTTPException(status_code=500, detail="Models not trained or files missing")
+    return result
+
 @app.post("/detect-anomaly", response_model=AnomalyDetectionResponse)
 def detect_anomaly_endpoint(request: AnomalyDetectionRequest):
     result = predict_anomaly(
@@ -181,3 +291,26 @@ def detect_anomaly_endpoint(request: AnomalyDetectionRequest):
     if result is None:
         raise HTTPException(status_code=500, detail="Autoencoder model not trained or files missing")
     return result
+
+@app.post("/predict-text-fraud", response_model=TextFraudResponse)
+def predict_text_fraud_endpoint(request: TextFraudRequest):
+    result = predict_text_fraud(request.text)
+    if result is None:
+        raise HTTPException(status_code=500, detail="Text model not trained or files missing")
+    return result
+
+@app.post("/verify-document", response_model=DocumentVerifyResponse)
+def verify_document_endpoint(request: DocumentVerifyRequest):
+    result = verify_document(request.image_path, request.reference_path)
+    return result
+
+@app.websocket("/ws/ai-engine")
+async def ws_ai_engine(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            status = read_model_status()
+            await websocket.send_json(status)
+            await asyncio.sleep(2)
+    except WebSocketDisconnect:
+        pass

@@ -6,6 +6,7 @@ import {
   ShieldCheck, Calendar, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getClaims, predictFraud, detectAnomaly, generateMockClaims, verifyDocument } from '../utils/api';
 
 const claimsData = [
   { id: 'CLM-1092', holder: 'John Doe', type: 'Auto Collision', amount: 15400, date: '2026-03-24', status: 'Under Review', riskScore: 94, adjuster: 'Sarah K.' },
@@ -64,17 +65,95 @@ const RiskMeter = ({ score }) => {
 };
 
 export default function Claims() {
+  const [claimsData, setClaimsData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [hoveredRow, setHoveredRow] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [analyzingClaim, setAnalyzingClaim] = useState(null);
+  const [showDocModal, setShowDocModal] = useState(false);
+  const [docImagePath, setDocImagePath] = useState('');
+  const [docReferencePath, setDocReferencePath] = useState('');
+  const [docResult, setDocResult] = useState(null);
+  const [docLoading, setDocLoading] = useState(false);
+  const [docClaimId, setDocClaimId] = useState(null);
+
+  // Fetch claims data on component mount
+  useEffect(() => {
+    fetchClaims();
+  }, []);
+
+  const fetchClaims = async () => {
+    try {
+      setLoading(true);
+      const data = await getClaims();
+      if (data && data.length > 0) {
+        setClaimsData(data);
+      } else {
+        // Fallback to mock data if backend is not available
+        setClaimsData(generateMockClaims());
+      }
+    } catch (error) {
+      console.error('Failed to fetch claims:', error);
+      setClaimsData(generateMockClaims());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Analyze claim with AI models
+  const analyzeClaim = async (claim) => {
+    setAnalyzingClaim(claim.id);
+    try {
+      // Prepare data for fraud detection
+      const claimData = {
+        age: 35, // Default age, could be enhanced with real data
+        claim_amount: claim.amount,
+        policy_type: claim.claim_type?.toLowerCase().includes('auto') ? 'Auto' :
+                    claim.claim_type?.toLowerCase().includes('health') ? 'Health' :
+                    claim.claim_type?.toLowerCase().includes('property') ? 'Property' : 'Life',
+        incident_type: claim.claim_type?.toLowerCase().includes('accident') ? 'Accident' :
+                      claim.claim_type?.toLowerCase().includes('theft') ? 'Theft' :
+                      claim.claim_type?.toLowerCase().includes('medical') ? 'Medical' : 'Damage',
+        claim_history: 1,
+        policy_duration: 5,
+        deductible: 500
+      };
+
+      // Run both fraud detection models
+      const [fraudResult, anomalyResult] = await Promise.all([
+        predictFraud(claimData),
+        detectAnomaly(claimData)
+      ]);
+
+      // Update claim with AI results
+      setClaimsData(prev => prev.map(c =>
+        c.id === claim.id
+          ? {
+              ...c,
+              ai_fraud_score: fraudResult.risk_score,
+              ai_is_fraud: fraudResult.is_fraud,
+              ai_anomaly_score: anomalyResult.anomaly_score,
+              ai_is_anomaly: anomalyResult.is_anomaly,
+              analyzed: true
+            }
+          : c
+      ));
+
+    } catch (error) {
+      console.error('AI analysis failed:', error);
+    } finally {
+      setAnalyzingClaim(null);
+    }
+  };
 
   const filtered = claimsData.filter(c => {
     const matchSearch =
-      c.holder.toLowerCase().includes(search.toLowerCase()) ||
-      c.id.toLowerCase().includes(search.toLowerCase()) ||
-      c.type.toLowerCase().includes(search.toLowerCase());
+      c.policy_holder?.toLowerCase().includes(search.toLowerCase()) ||
+      c.id?.toLowerCase().includes(search.toLowerCase()) ||
+      c.claim_type?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || c.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -82,6 +161,28 @@ export default function Claims() {
   const handleRefresh = () => {
     setIsRefreshing(true);
     setTimeout(() => setIsRefreshing(false), 1200);
+  };
+
+  const openDocModal = (claimId = null) => {
+    setDocClaimId(claimId);
+    setDocImagePath('');
+    setDocReferencePath('');
+    setDocResult(null);
+    setShowDocModal(true);
+  };
+
+  const handleVerifyDocument = async () => {
+    if (!docImagePath) return;
+    setDocLoading(true);
+    try {
+      const result = await verifyDocument(docImagePath, docReferencePath || null);
+      setDocResult(result);
+    } catch (error) {
+      console.error('Document verification failed:', error);
+      setDocResult({ error: 'Verification failed' });
+    } finally {
+      setDocLoading(false);
+    }
   };
 
   return (
@@ -220,8 +321,22 @@ export default function Claims() {
               </tr>
             </thead>
             <tbody>
-              <AnimatePresence>
-                {filtered.map((claim, i) => (
+              {loading ? (
+                <tr>
+                  <td colSpan="9" className="px-5 py-20 text-center">
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="flex flex-col items-center gap-3"
+                    >
+                      <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin" />
+                      <p className="text-slate-400 font-medium">Loading claims from database...</p>
+                    </motion.div>
+                  </td>
+                </tr>
+              ) : (
+                <AnimatePresence>
+                  {filtered.map((claim, i) => (
                   <motion.tr
                     key={claim.id}
                     initial={{ opacity: 0, y: 12 }}
@@ -242,30 +357,30 @@ export default function Claims() {
                           className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
                           style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}
                         >
-                          {claim.holder.split(' ').map(n => n[0]).join('')}
+                          {claim.policy_holder?.split(' ').map(n => n[0]).join('') || 'U'}
                         </div>
-                        <span className="text-sm font-semibold text-slate-200">{claim.holder}</span>
+                        <span className="text-sm font-semibold text-slate-200">{claim.policy_holder || 'Unknown'}</span>
                       </div>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <span className="text-xs font-bold text-slate-400 px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                        {claim.type}
+                        {claim.claim_type || 'Unknown'}
                       </span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="text-sm font-bold text-white">${claim.amount.toLocaleString()}</span>
+                      <span className="text-sm font-bold text-white">${claim.amount?.toLocaleString() || '0'}</span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="text-xs text-slate-500 font-medium">{claim.date}</span>
+                      <span className="text-xs text-slate-500 font-medium">{claim.date || 'N/A'}</span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <RiskMeter score={claim.riskScore} />
+                      <RiskMeter score={claim.risk_score || claim.ai_fraud_score || 0} />
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <StatusPill status={claim.status} />
+                      <StatusPill status={claim.status || 'Pending'} />
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="text-xs text-slate-600 font-medium">{claim.adjuster}</span>
+                      <span className="text-xs text-slate-600 font-medium">{claim.adjuster || 'Unassigned'}</span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap text-right">
                       <AnimatePresence>
@@ -277,8 +392,24 @@ export default function Claims() {
                             <button className="p-1.5 rounded-lg text-indigo-400 hover:text-indigo-300 transition-colors" style={{ background: 'rgba(99,102,241,0.12)' }}>
                               <Eye className="w-3.5 h-3.5" />
                             </button>
-                            <button className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 transition-colors" style={{ background: 'rgba(16,185,129,0.12)' }}>
-                              <ShieldCheck className="w-3.5 h-3.5" />
+                            <button
+                              onClick={() => analyzeClaim(claim)}
+                              disabled={analyzingClaim === claim.id}
+                              className="p-1.5 rounded-lg text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+                              style={{ background: 'rgba(16,185,129,0.12)' }}
+                            >
+                              {analyzingClaim === claim.id ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => openDocModal(claim.id)}
+                              className="p-1.5 rounded-lg text-indigo-400 hover:text-indigo-300 transition-colors"
+                              style={{ background: 'rgba(99,102,241,0.12)' }}
+                            >
+                              <UploadCloud className="w-3.5 h-3.5" />
                             </button>
                           </motion.div>
                         ) : (
@@ -294,6 +425,7 @@ export default function Claims() {
                   </motion.tr>
                 ))}
               </AnimatePresence>
+              )}
             </tbody>
           </table>
 
@@ -364,12 +496,121 @@ export default function Claims() {
                     />
                   </div>
                 ))}
+
+                <div className="pt-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Document Verification</label>
+                  <div className="space-y-2">
+                    <input
+                      value={docImagePath}
+                      onChange={e => setDocImagePath(e.target.value)}
+                      placeholder="Document image path (server path)"
+                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    />
+                    <input
+                      value={docReferencePath}
+                      onChange={e => setDocReferencePath(e.target.value)}
+                      placeholder="Reference image path (optional)"
+                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    />
+                    <button
+                      onClick={handleVerifyDocument}
+                      disabled={!docImagePath || docLoading}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow: '0 6px 24px rgba(99,102,241,0.3)' }}
+                    >
+                      {docLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                      Verify Document
+                    </button>
+                    {docResult && !docResult.error && (
+                      <div className="text-[11px] text-slate-400">
+                        Risk: <span className="text-emerald-400 font-bold">{docResult.risk_score ?? 'N/A'}</span> ·
+                        Status: <span className="text-indigo-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
+                      </div>
+                    )}
+                    {docResult?.error && (
+                      <div className="text-[11px] text-rose-400 font-bold">{docResult.error}</div>
+                    )}
+                  </div>
+                </div>
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setShowModal(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-200 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
                     Cancel
                   </button>
                   <button className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', boxShadow: '0 8px 32px rgba(99,102,241,0.4)' }}>
                     Submit Claim
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* â”€â”€ Document Verification Modal â”€â”€ */}
+      <AnimatePresence>
+        {showDocModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowDocModal(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={{ type: 'spring', stiffness: 280, damping: 22 }}
+              onClick={e => e.stopPropagation()}
+              className="relative overflow-hidden rounded-2xl p-8 w-full max-w-lg"
+              style={{ background: 'linear-gradient(135deg, #0d0f26 0%, #0a0c20 100%)', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 60px rgba(99,102,241,0.1)' }}
+            >
+              <div className="absolute -right-16 -top-16 w-48 h-48 bg-indigo-600/20 blur-3xl rounded-full" />
+              <h2 className="text-xl font-black text-white mb-6 relative z-10 flex items-center gap-3">
+                <UploadCloud className="w-5 h-5 text-indigo-400" /> Verify Document
+              </h2>
+              {docClaimId && (
+                <p className="text-xs text-slate-500 mb-4">Claim: <span className="text-indigo-300 font-bold">{docClaimId}</span></p>
+              )}
+              <div className="space-y-3 relative z-10">
+                <input
+                  value={docImagePath}
+                  onChange={e => setDocImagePath(e.target.value)}
+                  placeholder="Document image path (server path)"
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                />
+                <input
+                  value={docReferencePath}
+                  onChange={e => setDocReferencePath(e.target.value)}
+                  placeholder="Reference image path (optional)"
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                />
+                <button
+                  onClick={handleVerifyDocument}
+                  disabled={!docImagePath || docLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow: '0 6px 24px rgba(99,102,241,0.3)' }}
+                >
+                  {docLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
+                  Verify Now
+                </button>
+                {docResult && !docResult.error && (
+                  <div className="text-[11px] text-slate-400">
+                    Risk: <span className="text-emerald-400 font-bold">{docResult.risk_score ?? 'N/A'}</span> ·
+                    Status: <span className="text-indigo-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
+                  </div>
+                )}
+                {docResult?.error && (
+                  <div className="text-[11px] text-rose-400 font-bold">{docResult.error}</div>
+                )}
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowDocModal(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-200 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    Close
                   </button>
                 </div>
               </div>

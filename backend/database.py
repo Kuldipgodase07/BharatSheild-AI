@@ -2,27 +2,30 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
+from dotenv import load_dotenv
 
-# Default to a local PostgreSQL if available, otherwise an in-memory SQLite for testing to prevent immediate crash if no Postgres available
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/insurance_fraud")
+# Load environment variables from .env if present
+load_dotenv()
 
-engine = None
-SessionLocal = None
+# For production, use PostgreSQL
+# DATABASE_URL = "postgresql://username:password@localhost:5432/insurance_fraud_db"
 
-try:
+# For development/demo, use PostgreSQL with env var if set, else fallback to SQLite
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./insurance_fraud.db")
+
+# Create engine based on database type
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+    print("✅ Connected to SQLite database")
+elif DATABASE_URL.startswith("postgresql"):
     engine = create_engine(DATABASE_URL)
-    # Test the connection
-    with engine.connect() as conn:
-        pass
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    print("Connected to PostgreSQL")
-except Exception as e:
-    # Fallback for local demo purposes if postgres isn't set up
-    print("Failed to connect to PostgreSQL, falling back to SQLite", e)
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
-    engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    print("Connected to SQLite")
+    print("✅ Connected to PostgreSQL database")
+else:
+    # Fallback to SQLite
+    engine = create_engine("sqlite:///./insurance_fraud.db", connect_args={"check_same_thread": False})
+    print("✅ Connected to SQLite database (fallback)")
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 

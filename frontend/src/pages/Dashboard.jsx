@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { RadialBarChart, RadialBar, Cell, ResponsiveContainer } from 'recharts';
 import { ShieldCheck, Zap, AlertTriangle, ArrowUpRight, ArrowDownRight, Fingerprint, BrainCircuit, ScanLine, Activity, Eye, TrendingUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import GlowingChart from '../components/GlowingChart';
+import { downloadCsv } from '../utils/export';
 
-// ── Chart datasets — {x, y, label} ─────────────────────────────────────────
+// â”€â”€ Chart datasets â€” {x, y, label} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CHART_DATA = {
   week: {
     safe:  [
@@ -39,8 +40,14 @@ const fraudTypes = [
   { name: 'Premium Fraud', value: 16, fill: '#10b981' },
 ];
 
+const DASHBOARD_STATS = [
+  { label: "Claims Analyzed", value: "284k", trend: "+14.2%", subtext: "This month", icon: ScanLine, gradient: "bg-indigo-500" },
+  { label: "Threats Stopped", value: "1,842", trend: "+5.4%", subtext: "AI-blocked", icon: ShieldCheck, gradient: "bg-emerald-500" },
+  { label: "Critical Alerts", value: "156", trend: "-2.1%", subtext: "Needs action", icon: AlertTriangle, gradient: "bg-rose-500" },
+  { label: "Policies Scanned", value: "89.4k", trend: "+1.2%", subtext: "Active today", icon: Fingerprint, gradient: "bg-violet-500" },
+];
 const liveFeed = [
-  { id: 1, text: 'Critical claim flagged — $42k submission', time: 'Just now', type: 'critical' },
+  { id: 1, text: 'Critical claim flagged â€” $42k submission', time: 'Just now', type: 'critical' },
   { id: 2, text: 'Identity mismatch on Policy #A89', time: '2 min ago', type: 'warning' },
   { id: 3, text: '14 claims verified successfully', time: '5 min ago', type: 'success' },
   { id: 4, text: 'Geo-anomaly detected on mobile login', time: '12 min ago', type: 'warning' },
@@ -95,9 +102,19 @@ export default function Dashboard() {
   const chartDataA = CHART_DATA[chartPeriod].safe;
   const chartDataB = CHART_DATA[chartPeriod].fraud;
 
+  const handleGenerateReport = () => {
+    const rows = [
+      ...DASHBOARD_STATS.map((s) => ({ section: 'stats', name: s.label, value: s.value, trend: s.trend })),
+      ...fraudTypes.map((f) => ({ section: 'fraud_types', name: f.name, value: f.value })),
+      ...liveFeed.map((l) => ({ section: 'live_feed', name: l.text, value: l.time, type: l.type })),
+    ];
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(`fraud_report_${date}.csv`, rows);
+  };
+
   return (
     <div className="space-y-8 pb-14">
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
         <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}>
           <div className="flex items-center gap-3 mb-2">
@@ -114,6 +131,7 @@ export default function Dashboard() {
         </motion.div>
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="flex gap-3">
           <button
+            onClick={handleGenerateReport}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-2xl"
             style={{ background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', boxShadow: '0 8px 32px rgba(99,102,241,0.4)' }}
           >
@@ -122,15 +140,23 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* ── Stat Cards ── */}
+      {/* â”€â”€ Stat Cards â”€â”€ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Claims Analyzed" value="284k" trend="+14.2%" subtext="This month" icon={ScanLine} gradient="bg-indigo-500" delay={0.1} />
-        <StatCard title="Threats Stopped" value="1,842" trend="+5.4%" subtext="AI-blocked" icon={ShieldCheck} gradient="bg-emerald-500" delay={0.2} />
-        <StatCard title="Critical Alerts" value="156" trend="-2.1%" subtext="Needs action" icon={AlertTriangle} gradient="bg-rose-500" delay={0.3} />
-        <StatCard title="Policies Scanned" value="89.4k" trend="+1.2%" subtext="Active today" icon={Fingerprint} gradient="bg-violet-500" delay={0.4} />
+        {DASHBOARD_STATS.map((s, i) => (
+          <StatCard
+            key={s.label}
+            title={s.label}
+            value={s.value}
+            trend={s.trend}
+            subtext={s.subtext}
+            icon={s.icon}
+            gradient={s.gradient}
+            delay={0.1 + i * 0.1}
+          />
+        ))}
       </div>
 
-      {/* ── Middle Row ── */}
+      {/* â”€â”€ Middle Row â”€â”€ */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         
         {/* Glowing Neon Chart (2/3 width) */}
@@ -143,7 +169,7 @@ export default function Dashboard() {
             boxShadow: '0 0 80px rgba(56,189,248,0.07), 0 0 40px rgba(244,113,181,0.05), inset 0 0 60px rgba(0,0,0,0.3)',
           }}
         >
-          {/* Ambient corner glows — more vivid */}
+          {/* Ambient corner glows â€” more vivid */}
           <div className="absolute -left-12 bottom-4 w-72 h-72 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.14) 0%, transparent 65%)' }} />
           <div className="absolute -right-8 -top-4 w-56 h-56 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(244,113,181,0.12) 0%, transparent 65%)' }} />
           <div className="absolute left-1/2 bottom-0 w-48 h-32 rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.07) 0%, transparent 70%)' }} />
@@ -252,7 +278,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Live Activity Feed ── */}
+      {/* â”€â”€ Live Activity Feed â”€â”€ */}
       <motion.div
         initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
         className="relative overflow-hidden rounded-2xl p-6"

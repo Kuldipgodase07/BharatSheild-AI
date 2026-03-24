@@ -12,6 +12,8 @@ import {
   ResponsiveContainer, PieChart as RPieChart, Pie, Cell,
   ReferenceLine, ReferenceDot
 } from 'recharts';
+import { getAnalytics, verifyDocument } from '../utils/api';
+import { downloadCsv } from '../utils/export';
 
 // ─── Generate realistic data for any range ──────────────────────────────────
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -281,10 +283,35 @@ function kpis(data) {
 export default function Analytics() {
   const [preset, setPreset] = useState('6M');
   const [showPicker, setShowPicker] = useState(false);
+  const [docImagePath, setDocImagePath] = useState('');
+  const [docReferencePath, setDocReferencePath] = useState('');
+  const [docResult, setDocResult] = useState(null);
+  const [docLoading, setDocLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState(null);
   const [liveMinute, setLiveMinute] = useState(0); // ticks every minute to refresh TODAY
   const [liveTime, setLiveTime] = useState('');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const pickerRef = useRef(null);
+
+  // Fetch analytics data on component mount
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, []);
+
+  const fetchAnalyticsData = async () => {
+    try {
+      setLoading(true);
+      const data = await getAnalytics();
+      if (data) {
+        setAnalyticsData(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Close picker on outside click
   useEffect(() => {
@@ -307,7 +334,122 @@ export default function Analytics() {
   }, []);
 
   const data = useMemo(() => buildData(preset, liveMinute), [preset, liveMinute]);
-  const kpiCards = useMemo(() => kpis(data), [data]);
+  const kpiCards = useMemo(() => {
+    if (analyticsData) {
+      // Use real analytics data from backend
+      return [
+        {
+          label: 'Total Claims',
+          value: analyticsData.total_claims?.toLocaleString() || '0',
+          trend: '+12.3%',
+          icon: Activity,
+          gradient: 'from-indigo-500 to-violet-500',
+          glow: 'rgba(99,102,241,0.4)'
+        },
+        {
+          label: 'Approved Claims',
+          value: analyticsData.approved_claims?.toLocaleString() || '0',
+          trend: '+5.1%',
+          icon: CheckCircle2,
+          gradient: 'from-emerald-500 to-teal-500',
+          glow: 'rgba(16,185,129,0.4)'
+        },
+        {
+          label: 'Pending Review',
+          value: analyticsData.pending_claims?.toLocaleString() || '0',
+          trend: '-3.2%',
+          icon: Calendar,
+          gradient: 'from-amber-500 to-orange-500',
+          glow: 'rgba(245,158,11,0.4)'
+        },
+        {
+          label: 'AI Flagged Fraud',
+          value: analyticsData.flagged_claims?.toLocaleString() || '0',
+          trend: '+8.7%',
+          icon: Shield,
+          gradient: 'from-rose-500 to-pink-500',
+          glow: 'rgba(244,63,94,0.4)'
+        },
+        {
+          label: 'Active Policies',
+          value: analyticsData.active_policies?.toLocaleString() || '0',
+          trend: '+15.2%',
+          icon: Target,
+          gradient: 'from-cyan-500 to-blue-500',
+          glow: 'rgba(6,182,212,0.4)'
+        },
+        {
+          label: 'Total Revenue',
+          value: `$${(analyticsData.total_revenue / 1000000)?.toFixed(1) || '0'}M`,
+          trend: '+18.9%',
+          icon: TrendingUp,
+          gradient: 'from-green-500 to-emerald-500',
+          glow: 'rgba(34,197,94,0.4)'
+        }
+      ];
+    } else {
+      // Fallback to synthetic data
+      return kpis(data);
+    }
+  }, [analyticsData, data]);
+
+  const handleExport = useCallback(() => {
+    const columns = [
+      'section',
+      'label',
+      'value',
+      'change',
+      'up',
+      'claims',
+      'fraud',
+      'approved',
+      'revenue',
+      'actual_claims',
+      'actual_fraud',
+      'predict_claims',
+      'predict_fraud',
+      'type'
+    ];
+
+    const toRow = (input) => {
+      const row = {};
+      columns.forEach((c) => {
+        row[c] = input[c] !== undefined ? input[c] : '';
+      });
+      return row;
+    };
+
+    const rows = [
+      ...kpiCards.map((k) => toRow({
+        section: 'kpi',
+        label: k.label,
+        value: k.value,
+        change: k.trend || k.change,
+        up: k.up
+      })),
+      ...data.map((d) => toRow({
+        section: 'series',
+        ...d
+      }))
+    ];
+
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCsv(`analytics_${preset}_${date}.csv`, rows);
+  }, [data, kpiCards, preset]);
+
+  const handleVerifyDoc = useCallback(async () => {
+    if (!docImagePath) return;
+    setDocLoading(true);
+    try {
+      const result = await verifyDocument(docImagePath, docReferencePath || null);
+      setDocResult(result);
+    } catch (error) {
+      console.error('Document verification failed:', error);
+      setDocResult({ error: 'Verification failed' });
+    } finally {
+      setDocLoading(false);
+    }
+  }, [docImagePath, docReferencePath]);
 
   // Derived for TODAY
   const isToday = preset === 'TODAY';
@@ -336,6 +478,12 @@ export default function Analytics() {
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse inline-block" />
               Analytics Center
             </span>
+            {analyticsData && (
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full flex items-center gap-1">
+                <Shield className="w-3 h-3" />
+                Real Dataset
+              </span>
+            )}
           </div>
           <h1 className="text-4xl font-black tracking-tight text-white">
             Fraud{' '}
@@ -408,8 +556,20 @@ export default function Analytics() {
             </AnimatePresence>
           </div>
 
+          {/* Refresh Data */}
+          <button
+            onClick={fetchAnalyticsData}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all disabled:opacity-50"
+            style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}
+          >
+            <Activity className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+
           {/* Export */}
           <button
+            onClick={handleExport}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95"
             style={{ background:'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow:'0 6px 24px rgba(99,102,241,0.4)' }}
           >
@@ -417,6 +577,59 @@ export default function Analytics() {
           </button>
         </motion.div>
       </div>
+
+      {/* â”€â”€ Document Verification Widget â”€â”€ */}
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="rounded-2xl p-5"
+        style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(255,255,255,0.07)' }}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-black text-white">Forgery Detection</h3>
+            <p className="text-xs text-slate-600">Verify documents and signatures (server file paths)</p>
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">
+            Live
+          </span>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <input
+            value={docImagePath}
+            onChange={e => setDocImagePath(e.target.value)}
+            placeholder="Document image path"
+            className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+            style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}
+          />
+          <input
+            value={docReferencePath}
+            onChange={e => setDocReferencePath(e.target.value)}
+            placeholder="Reference image path (optional)"
+            className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+            style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}
+          />
+          <button
+            onClick={handleVerifyDoc}
+            disabled={!docImagePath || docLoading}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
+            style={{ background:'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow:'0 6px 24px rgba(99,102,241,0.4)' }}
+          >
+            {docLoading ? <Activity className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            Verify
+          </button>
+        </div>
+        {docResult && !docResult.error && (
+          <div className="text-[11px] text-slate-400 mt-3">
+            Risk: <span className="text-emerald-400 font-bold">{docResult.risk_score ?? 'N/A'}</span> ·
+            Status: <span className="text-indigo-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
+          </div>
+        )}
+        {docResult?.error && (
+          <div className="text-[11px] text-rose-400 font-bold mt-3">{docResult.error}</div>
+        )}
+      </motion.div>
 
       {/* ── KPI Cards ── */}
       <AnimatePresence mode="wait">

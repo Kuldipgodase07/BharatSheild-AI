@@ -1,11 +1,16 @@
-fastapi
+﻿fastapi
 uvicorn
 sqlalchemy
 psycopg2-binary
 pydantic
 pydantic-settings
+python-dotenv
 scikit-learn
 pandas
 numpy
 joblib
 tensorflow
+openpyxl
+xgboost
+opencv-python
+pillow
