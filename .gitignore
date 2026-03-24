@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.env
+*.db
+*.pkl
+*.keras
+node_modules/
