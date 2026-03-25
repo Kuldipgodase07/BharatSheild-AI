@@ -1,0 +1,64 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL Database ──────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: bharatshield_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bharatshield}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bharatshield_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-bharatshield_ai}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bharatshield"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis Cache ──────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: bharatshield_redis
+    ports:
+      - "6379:6379"
+
+  # ── FastAPI Backend ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: bharatshield_backend
+    environment:
+      DATABASE_URL: postgresql://bharatshield:bharatshield_secret@db:5432/bharatshield_ai
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: ${SECRET_KEY:-change_me_in_production}
+      DEBUG: ${DEBUG:-false}
+    volumes:
+      - ./data:/app/data:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── React Frontend ───────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: bharatshield_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

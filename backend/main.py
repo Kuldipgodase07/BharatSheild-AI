@@ -5,8 +5,14 @@ from pydantic import BaseModel
 from datetime import datetime
 import asyncio
 import os
+import sys
 import json
 import uuid
+
+# ── Add ml/ directory to path so fraud_detection_model etc. can be imported ──
+_ML_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'ml')
+if os.path.isdir(_ML_DIR) and _ML_DIR not in sys.path:
+    sys.path.insert(0, os.path.abspath(_ML_DIR))
 
 import django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
@@ -189,17 +195,19 @@ class AIContentScanRequest(BaseModel):
 
 
 BASE_DIR = os.path.dirname(__file__)
-MODEL_STATUS_PATH = os.path.join(BASE_DIR, 'model_status.json')
+# Model artifacts live in ml/ (sibling of backend/)
+ML_DIR = os.path.abspath(os.path.join(BASE_DIR, '..', 'ml'))
+MODEL_STATUS_PATH = os.path.join(ML_DIR, 'model_status.json')
 
 def _latest_model_mtime():
     model_files = [
-        os.path.join(BASE_DIR, 'fraud_detection_model.pkl'),
-        os.path.join(BASE_DIR, 'logistic_fraud_model.pkl'),
-        os.path.join(BASE_DIR, 'xgboost_fraud_model.pkl'),
-        os.path.join(BASE_DIR, 'isolation_forest_model.pkl'),
-        os.path.join(BASE_DIR, 'one_class_svm_model.pkl'),
-        os.path.join(BASE_DIR, 'autoencoder_model.keras'),
-        os.path.join(BASE_DIR, 'text_fraud_model.pkl'),
+        os.path.join(ML_DIR, 'fraud_detection_model.pkl'),
+        os.path.join(ML_DIR, 'logistic_fraud_model.pkl'),
+        os.path.join(ML_DIR, 'xgboost_fraud_model.pkl'),
+        os.path.join(ML_DIR, 'isolation_forest_model.pkl'),
+        os.path.join(ML_DIR, 'one_class_svm_model.pkl'),
+        os.path.join(ML_DIR, 'autoencoder_model.keras'),
+        os.path.join(ML_DIR, 'text_fraud_model.pkl'),
         MODEL_STATUS_PATH
     ]
     mtimes = []
@@ -214,13 +222,13 @@ def read_model_status():
         'status': 'Initializing',
         'accuracy': None,
         'models': {
-            'random_forest': os.path.exists(os.path.join(BASE_DIR, 'fraud_detection_model.pkl')),
-            'logistic_regression': os.path.exists(os.path.join(BASE_DIR, 'logistic_fraud_model.pkl')),
-            'xgboost': os.path.exists(os.path.join(BASE_DIR, 'xgboost_fraud_model.pkl')),
-            'isolation_forest': os.path.exists(os.path.join(BASE_DIR, 'isolation_forest_model.pkl')),
-            'one_class_svm': os.path.exists(os.path.join(BASE_DIR, 'one_class_svm_model.pkl')),
-            'autoencoder': os.path.exists(os.path.join(BASE_DIR, 'autoencoder_model.keras')),
-            'text_model': os.path.exists(os.path.join(BASE_DIR, 'text_fraud_model.pkl'))
+            'random_forest': os.path.exists(os.path.join(ML_DIR, 'fraud_detection_model.pkl')),
+            'logistic_regression': os.path.exists(os.path.join(ML_DIR, 'logistic_fraud_model.pkl')),
+            'xgboost': os.path.exists(os.path.join(ML_DIR, 'xgboost_fraud_model.pkl')),
+            'isolation_forest': os.path.exists(os.path.join(ML_DIR, 'isolation_forest_model.pkl')),
+            'one_class_svm': os.path.exists(os.path.join(ML_DIR, 'one_class_svm_model.pkl')),
+            'autoencoder': os.path.exists(os.path.join(ML_DIR, 'autoencoder_model.keras')),
+            'text_model': os.path.exists(os.path.join(ML_DIR, 'text_fraud_model.pkl'))
         }
     }
 
@@ -500,7 +508,7 @@ def add_user(
         # Dynamically append this new user to the model's training dataset!
         try:
             import pandas as pd
-            csv_path = os.path.join(os.path.dirname(__file__), 'insuranceFraud_Dataset.csv')
+            csv_path = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data')), 'insuranceFraud_Dataset.csv')
             if os.path.exists(csv_path):
                 df = pd.read_csv(csv_path)
                 new_row = {c: 0 for c in df.columns}

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bharatshield-frontend
+  namespace: bharatshield
+  labels:
+    app: bharatshield
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: bharatshield
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app: bharatshield
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: bharatshield/frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bharatshield-frontend-svc
+  namespace: bharatshield
+spec:
+  selector:
+    app: bharatshield
+    component: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bharatshield-ingress
+  namespace: bharatshield
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: bharatshield.ai
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bharatshield-frontend-svc
+                port:
+                  number: 80
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: bharatshield-backend-svc
+                port:
+                  number: 8000

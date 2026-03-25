@@ -166,11 +166,7 @@ export default function Users() {
     e.target.value = null;
   };
 
-  const generateMockCsvEntries = () => {
-    const mock1 = { id: `#${Math.floor(Math.random() * 9000) + 1000}`, type: 'ULIP', occ: 'Business Owner', state: 'Delhi', age: 41, marital: 'Married', income: '₹14.0L', assured: 'Verified Digital Signature', ea: '12%', channel: 'Banca', risk: 'Low', initial: 'B', color: '#10b981' };
-    const mock2 = { id: `#${Math.floor(Math.random() * 9000) + 1000}`, type: 'Claimant', occ: 'Unknown', state: 'fraud.claim@alert.com', age: 29, marital: 'Single', income: '-', assured: 'Tampered / Unverified', ea: '98%', channel: 'Retail', risk: 'Critical', initial: 'U', color: '#ef4444' };
-    setUsersData(prev => [mock1, mock2, ...prev]);
-  };
+
 
   const handleDelete = async (id, e) => {
     e.stopPropagation();
