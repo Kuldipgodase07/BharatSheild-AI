@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Users, AlertTriangle, Menu, X, ShieldAlert, LogOut, Settings, BrainCircuit, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, AlertTriangle, Menu, X, ShieldAlert, LogOut, Settings, BrainCircuit, BarChart2, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -9,7 +9,7 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
-const SIDEBAR_BG = 'rgba(6, 8, 22, 0.98)';
+const SIDEBAR_BG = 'var(--bg-secondary)';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -55,12 +55,32 @@ export default function Sidebar() {
     };
   }, []);
 
+  const [alertCount, setAlertCount] = useState(0);
+
+  useEffect(() => {
+    const fetchAlertCount = async () => {
+      try {
+        const { getAlertsPaginated } = await import('../utils/api');
+        const data = await getAlertsPaginated(0, 1);
+        setAlertCount(data.total || 0);
+      } catch (error) {
+        console.error('Error fetching alert count:', error);
+      }
+    };
+
+    fetchAlertCount();
+    // Poll every 30 seconds for live updates
+    const interval = setInterval(fetchAlertCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'Fraud Alerts', href: '/alerts', icon: AlertTriangle, badge: '12' },
+    { name: 'Fraud Alerts', href: '/alerts', icon: AlertTriangle, badge: alertCount > 0 ? String(alertCount) : null },
     { name: 'Claims', href: '/claims', icon: FileText },
     { name: 'Policies', href: '/policies', icon: Users },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
+    { name: 'Users', href: '/users', icon: User },
   ];
 
   return (
@@ -83,11 +103,11 @@ export default function Sidebar() {
           'fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col lg:static lg:translate-x-0 transition-transform duration-300',
           isOpen ? 'translate-x-0' : '-translate-x-full'
         )}
-        style={{ background: SIDEBAR_BG, borderRight: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: SIDEBAR_BG, borderRight: '1px solid var(--border-card)' }}
       >
         {/* Top gradient shimmer */}
         <div className="absolute top-0 left-0 right-0 h-48 pointer-events-none"
-          style={{ background: 'linear-gradient(180deg, rgba(99,102,241,0.12) 0%, transparent 100%)' }} />
+          style={{ background: 'linear-gradient(180deg, rgba(245,85,15,0.12) 0%, transparent 100%)' }} />
 
         {/* Logo */}
         <div className="flex h-20 shrink-0 items-center gap-3 px-6 relative z-10">
@@ -95,15 +115,15 @@ export default function Sidebar() {
             whileHover={{ rotate: 20, scale: 1.1 }}
             transition={{ type: 'spring', stiffness: 300 }}
             className="flex items-center justify-center w-10 h-10 rounded-xl shrink-0"
-            style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', boxShadow: '0 0 24px rgba(99,102,241,0.5)' }}
+            style={{ background: 'linear-gradient(135deg, #f5550f, #ff8a50)', boxShadow: '0 0 24px rgba(245,85,15,0.5)' }}
           >
-            <ShieldAlert className="h-5 w-5 text-white" />
+            <ShieldAlert className="h-5 w-5 text-[color:var(--text-main)]" />
           </motion.div>
           <div>
-            <div className="text-base font-black text-white tracking-tight leading-none">TruGuard</div>
-            <div className="text-xs font-bold tracking-widest" style={{ background: 'linear-gradient(90deg, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI PLATFORM</div>
+            <div className="text-base font-black text-[color:var(--text-main)] tracking-tight leading-none">BharatShield<span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #f5550f, #ff8a50)' }}> AI</span></div>
+            <div className="text-xs font-bold tracking-widest" style={{ background: 'linear-gradient(90deg, #ff8a50, #ffb27a)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>AI PLATFORM</div>
           </div>
-          <button className="ml-auto lg:hidden text-slate-500 hover:text-white p-1" onClick={() => setIsOpen(false)}>
+          <button className="ml-auto lg:hidden text-[color:var(--text-muted)] hover:text-[color:var(--text-main)] p-1" onClick={() => setIsOpen(false)}>
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -121,25 +141,25 @@ export default function Sidebar() {
                     onClick={() => window.innerWidth < 1024 && setIsOpen(false)}
                     className="group relative flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200"
                     style={isActive
-                      ? { background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.2)' }
-                      : { color: '#475569', border: '1px solid transparent' }
+                      ? { background: 'var(--nav-active-bg)', color: 'var(--nav-active-text)', border: 'none', boxShadow: 'var(--shadow-card)' }
+                      : { color: 'var(--text-muted)', border: '1px solid transparent' }
                     }
                   >
                     {isActive && (
                       <motion.div
                         layoutId="nav-pill"
                         className="absolute inset-0 rounded-xl"
-                        style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.2)' }}
+                        style={{ background: 'var(--nav-active-bg)', border: 'transparent' }}
                         transition={{ type: 'spring', bounce: 0.15 }}
                       />
                     )}
                     <span className="flex items-center gap-3 relative z-10">
-                      <item.icon className={cn('h-4.5 w-4.5 shrink-0 transition-colors', isActive ? 'text-indigo-400' : 'text-slate-600 group-hover:text-slate-400')} style={{ width: 18, height: 18 }} />
-                      <span className={isActive ? 'text-indigo-300' : 'group-hover:text-slate-300 transition-colors'}>{item.name}</span>
+                      <item.icon className={cn('h-4.5 w-4.5 shrink-0 transition-colors', isActive ? 'text-orange-500' : 'text-slate-600 group-hover:text-[color:var(--text-muted)]')} style={{ width: 18, height: 18 }} />
+                      <span className={isActive ? 'text-orange-300' : 'group-hover:text-[color:var(--text-main)] transition-colors'}>{item.name}</span>
                     </span>
                     {item.badge && (
-                      <span className="relative z-10 text-[10px] font-black text-white px-2 py-0.5 rounded-full"
-                        style={{ background: isActive ? 'linear-gradient(135deg, #f43f5e, #ec4899)' : 'rgba(255,255,255,0.07)', boxShadow: isActive ? '0 0 12px rgba(244,63,94,0.4)' : 'none' }}>
+                      <span className="relative z-10 text-[10px] font-black text-[color:var(--text-main)] px-2 py-0.5 rounded-full"
+                        style={{ background: isActive ? 'linear-gradient(135deg, #f43f5e, #ff5252)' : 'rgba(255,255,255,0.07)', boxShadow: isActive ? '0 0 12px rgba(244,63,94,0.4)' : 'none' }}>
                         {item.badge}
                       </span>
                     )}
@@ -153,11 +173,11 @@ export default function Sidebar() {
           <motion.div
             whileHover={{ scale: 1.02 }}
             className="mt-8 rounded-2xl p-5 relative overflow-hidden cursor-pointer"
-            style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.08) 100%)', border: '1px solid rgba(99,102,241,0.15)' }}
+            style={{ background: 'linear-gradient(135deg, rgba(245,85,15,0.12) 0%, rgba(255,138,80,0.08) 100%)', border: '1px solid rgba(245,85,15,0.15)' }}
           >
-            <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-3xl" style={{ background: 'rgba(99,102,241,0.3)' }} />
-            <BrainCircuit className="w-5 h-5 text-indigo-400 mb-3" />
-            <p className="text-xs font-black text-white mb-0.5">AI Engine {engineStatus.version || 'v2.4'}</p>
+            <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full blur-3xl" style={{ background: 'rgba(245,85,15,0.3)' }} />
+            <BrainCircuit className="w-5 h-5 text-orange-500 mb-3" />
+            <p className="text-xs font-black text-[color:var(--text-main)] mb-0.5">AI Engine {engineStatus.version || 'v2.4'}</p>
             <p className="text-[10px] text-slate-600 leading-relaxed mb-3">
               Neural fraud patterns updated. Accuracy: {engineStatus.accuracy != null ? `${engineStatus.accuracy}%` : 'N/A'}
             </p>
@@ -173,8 +193,8 @@ export default function Sidebar() {
           </motion.div>
 
           {/* Bottom actions */}
-          <div className="mt-auto pt-4 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-400 hover:bg-white/5 transition-colors">
+          <div className="mt-auto pt-4 space-y-1" style={{ borderTop: '1px solid var(--border-card)' }}>
+            <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-600 hover:text-[color:var(--text-muted)] hover:bg-white/5 transition-colors">
               <Settings className="w-4 h-4" style={{ width: 16, height: 16 }} /> Settings
             </button>
             <button className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-rose-700 hover:text-rose-400 hover:bg-rose-500/10 transition-colors">
@@ -185,14 +205,14 @@ export default function Sidebar() {
       </div>
 
       {/* Mobile topbar */}
-      <div className="sticky top-0 z-40 flex h-14 lg:hidden items-center justify-between px-4" style={{ background: 'rgba(6,8,22,0.95)', borderBottom: '1px solid rgba(255,255,255,0.06)', backdropFilter: 'blur(12px)' }}>
+      <div className="sticky top-0 z-40 flex h-14 lg:hidden items-center justify-between px-4" style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-card)', backdropFilter: 'blur(12px)' }}>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
-            <ShieldAlert className="w-4 h-4 text-white" />
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #f5550f, #ff8a50)' }}>
+            <ShieldAlert className="w-4 h-4 text-[color:var(--text-main)]" />
           </div>
-          <span className="font-black text-white text-sm">TruGuard AI</span>
+          <span className="font-black text-[color:var(--text-main)] text-sm">BharatShield<span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #f5550f, #ff8a50)' }}> AI</span></span>
         </div>
-        <button className="p-2 rounded-lg text-slate-500 hover:text-white hover:bg-white/5 transition-colors" onClick={() => setIsOpen(true)}>
+        <button className="p-2 rounded-lg text-[color:var(--text-muted)] hover:text-[color:var(--text-main)] hover:bg-white/5 transition-colors" onClick={() => setIsOpen(true)}>
           <Menu className="w-5 h-5" />
         </button>
       </div>

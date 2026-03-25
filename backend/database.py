@@ -11,19 +11,11 @@ load_dotenv()
 # DATABASE_URL = "postgresql://username:password@localhost:5432/insurance_fraud_db"
 
 # For development/demo, use PostgreSQL with env var if set, else fallback to SQLite
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./insurance_fraud.db")
+DATABASE_URL = "postgresql://postgres:root123@localhost:5432/insurance_fraud_db"
 
 # Create engine based on database type
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-    print("✅ Connected to SQLite database")
-elif DATABASE_URL.startswith("postgresql"):
-    engine = create_engine(DATABASE_URL)
-    print("✅ Connected to PostgreSQL database")
-else:
-    # Fallback to SQLite
-    engine = create_engine("sqlite:///./insurance_fraud.db", connect_args={"check_same_thread": False})
-    print("✅ Connected to SQLite database (fallback)")
+engine = create_engine(DATABASE_URL)
+print("✅ Connected to PostgreSQL database")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

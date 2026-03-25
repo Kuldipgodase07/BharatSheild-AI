@@ -18,10 +18,11 @@ export const apiEndpoints = {
   detectAnomaly: '/detect-anomaly',
 
   // Data endpoints
-  alerts: '/alerts',
-  claims: '/claims',
-  policies: '/policies',
-  analytics: '/analytics',
+  alerts: '/api/v1/alerts',
+  alertsPaginated: '/api/v1/alerts', // Use the same unified endpoint
+  claims: '/api/v1/claims',
+  policies: '/api/v1/policies',
+  analytics: '/api/v1/analytics',
 
   // Document verification
   verifyDocument: '/verify-document',
@@ -59,13 +60,43 @@ export const getAlerts = async (skip = 0, limit = 100) => {
   }
 };
 
-export const getClaims = async (skip = 0, limit = 100) => {
+export const getAlertsPaginated = async (skip = 0, limit = 5) => {
+  try {
+    const response = await api.get(`${apiEndpoints.alertsPaginated}?skip=${skip}&limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching paginated alerts:', error);
+    return { total: 0, alerts: [] };
+  }
+};
+
+export const resolveAlert = async (alertId) => {
+  try {
+    const response = await api.post(`/api/v1/alerts/${alertId}/resolve`);
+    return response.data;
+  } catch (error) {
+    console.error('Error resolving alert:', error);
+    throw error;
+  }
+};
+
+export const getClaims = async (skip = 0, limit = 500) => {
   try {
     const response = await api.get(`${apiEndpoints.claims}?skip=${skip}&limit=${limit}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching claims:', error);
     return [];
+  }
+};
+
+export const createClaim = async (claimData) => {
+  try {
+    const response = await api.post(apiEndpoints.claims, claimData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating claim:', error);
+    throw error;
   }
 };
 
@@ -102,42 +133,8 @@ export const verifyDocument = async (imagePath, referencePath = null) => {
   }
 };
 
-// Mock data generators for fallback (when backend is not available)
-export const generateMockClaims = () => [
-  {
-    id: 'CLM-1092',
-    policy_holder: 'John Doe',
-    claim_type: 'Auto Collision',
-    amount: 15400,
-    date: '2026-03-24',
-    status: 'Under Review',
-    risk_score: 94,
-    adjuster: 'Sarah K.',
-    policy_id: 'POL-001'
-  },
-  {
-    id: 'CLM-1087',
-    policy_holder: 'Alice Smith',
-    claim_type: 'Medical Expense',
-    amount: 4200,
-    date: '2026-03-23',
-    status: 'Pending',
-    risk_score: 42,
-    adjuster: 'Mike R.',
-    policy_id: 'POL-002'
-  },
-  // Add more mock data...
-];
-
-export const generateMockAnalytics = () => ({
-  total_claims: 1247,
-  approved_claims: 892,
-  pending_claims: 218,
-  flagged_claims: 137,
-  total_policies: 3456,
-  active_policies: 2890,
-  fraud_alerts: 45,
-  total_revenue: 1250000.0
-});
+// Mock data generators for fallback
+export const generateMockClaims = () => [];
+export const generateMockAnalytics = () => ({});
 
 export default api;

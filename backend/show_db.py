@@ -1,0 +1,35 @@
+import os, django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
+django.setup()
+from api.models import Claim, Alert
+
+print("=" * 60)
+print("  CLAIMS TABLE - PostgreSQL (insurance_fraud_db)")
+print("=" * 60)
+print(f"Total Claims: {Claim.objects.count()}")
+print()
+for c in Claim.objects.all().order_by('date'):
+    print(f"  ID       : {c.id}")
+    print(f"  Holder   : {c.policy_holder}")
+    print(f"  Type     : {c.claim_type}")
+    print(f"  Amount   : Rs {float(c.amount):,.0f}")
+    print(f"  Status   : {c.status}")
+    print(f"  RiskScore: {c.risk_score}")
+    print(f"  Adjuster : {c.adjuster}")
+    print(f"  PolicyID : {c.policy_id}")
+    print("-" * 40)
+
+print()
+print("=" * 60)
+print("  ALERTS TABLE - PostgreSQL (insurance_fraud_db)")
+print("=" * 60)
+print(f"Total Alerts: {Alert.objects.count()}")
+print()
+for a in Alert.objects.all().order_by('date'):
+    print(f"  AlertID  : {a.id}")
+    print(f"  ClaimID  : {a.claim_id}")
+    print(f"  Holder   : {a.policy_holder}")
+    print(f"  FraudType: {a.fraud_type}")
+    print(f"  RiskScore: {a.risk_score}")
+    print(f"  Status   : {a.status}")
+    print("-" * 40)

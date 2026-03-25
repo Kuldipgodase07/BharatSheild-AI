@@ -6,7 +6,7 @@ import {
   ShieldCheck, Calendar, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getClaims, predictFraud, detectAnomaly, generateMockClaims, verifyDocument } from '../utils/api';
+import { getClaims, predictFraud, detectAnomaly, generateMockClaims, verifyDocument, createClaim } from '../utils/api';
 
 const claimsData = [
   { id: 'CLM-1092', holder: 'John Doe', type: 'Auto Collision', amount: 15400, date: '2026-03-24', status: 'Under Review', riskScore: 94, adjuster: 'Sarah K.' },
@@ -19,29 +19,28 @@ const claimsData = [
 ];
 
 const STATUS_CONFIG = {
-  'Approved':     { color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)', icon: CheckCircle2 },
-  'Pending':      { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)',  icon: Clock },
-  'Under Review': { color: '#6366f1', bg: 'rgba(99,102,241,0.12)', border: 'rgba(99,102,241,0.25)', icon: Eye },
-  'Flagged':      { color: '#f43f5e', bg: 'rgba(244,63,94,0.12)',  border: 'rgba(244,63,94,0.25)',  icon: AlertTriangle },
+  'APPROVED':      { color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)', icon: CheckCircle2, label: 'Approved' },
+  'PENDING':       { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)',  icon: Clock, label: 'Pending' },
+  'UNDER_REVIEW':  { color: '#f5550f', bg: 'rgba(245,85,15,0.12)', border: 'rgba(245,85,15,0.25)', icon: Eye, label: 'Under Review' },
+  'FLAGGED':       { color: '#f43f5e', bg: 'rgba(244,63,94,0.12)',  border: 'rgba(244,63,94,0.25)',  icon: AlertTriangle, label: 'Flagged' },
+  'REJECTED':      { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.25)', icon: XCircle, label: 'Rejected' },
+  // Legacy / Title Case aliases
+  'Approved':      { color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.25)', icon: CheckCircle2, label: 'Approved' },
+  'Pending':       { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.25)',  icon: Clock, label: 'Pending' },
+  'Under Review':  { color: '#f5550f', bg: 'rgba(245,85,15,0.12)', border: 'rgba(245,85,15,0.25)', icon: Eye, label: 'Under Review' },
+  'Flagged':       { color: '#f43f5e', bg: 'rgba(244,63,94,0.12)',  border: 'rgba(244,63,94,0.25)',  icon: AlertTriangle, label: 'Flagged' },
 };
 
-const STATS = [
-  { label: 'Total Claims', value: '1,247', trend: '+12.3%', icon: FileText, gradient: 'from-indigo-500 to-violet-500', glow: 'rgba(99,102,241,0.4)' },
-  { label: 'Approved', value: '892', trend: '+5.1%', icon: CheckCircle2, gradient: 'from-emerald-500 to-teal-500', glow: 'rgba(16,185,129,0.4)' },
-  { label: 'Pending Review', value: '218', trend: '-3.2%', icon: Clock, gradient: 'from-amber-500 to-orange-500', glow: 'rgba(245,158,11,0.4)' },
-  { label: 'AI Flagged', value: '137', trend: '+8.7%', icon: AlertTriangle, gradient: 'from-rose-500 to-pink-500', glow: 'rgba(244,63,94,0.4)' },
-];
-
 const StatusPill = ({ status }) => {
-  const cfg = STATUS_CONFIG[status];
+  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG[status?.toUpperCase?.()];
   const Icon = cfg?.icon || Clock;
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold"
-      style={{ color: cfg?.color, background: cfg?.bg, border: `1px solid ${cfg?.border}` }}
+      style={{ color: cfg?.color ?? '#94a3b8', background: cfg?.bg ?? 'rgba(148,163,184,0.12)', border: `1px solid ${cfg?.border ?? 'rgba(148,163,184,0.25)'}` }}
     >
       <Icon style={{ width: 11, height: 11 }} />
-      {status}
+      {cfg?.label ?? status}
     </span>
   );
 };
@@ -79,6 +78,11 @@ export default function Claims() {
   const [docResult, setDocResult] = useState(null);
   const [docLoading, setDocLoading] = useState(false);
   const [docClaimId, setDocClaimId] = useState(null);
+
+  const [newHolder, setNewHolder] = useState('');
+  const [newType, setNewType] = useState('');
+  const [newAmount, setNewAmount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch claims data on component mount
   useEffect(() => {
@@ -149,12 +153,72 @@ export default function Claims() {
     }
   };
 
+  const handleSubmitClaim = async () => {
+    try {
+      if (!newHolder || !newType || !newAmount) return;
+      setIsSubmitting(true);
+      await createClaim({
+        policy_holder: newHolder,
+        claim_type: newType,
+        amount: parseFloat(newAmount)
+      });
+      setShowModal(false);
+      setNewHolder('');
+      setNewType('');
+      setNewAmount('');
+      // Refresh to see in dashboard
+      fetchClaims();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Computed real-time stats from live data
+  const stats = React.useMemo(() => [
+    {
+      label: 'Total Claims',
+      value: claimsData.length.toLocaleString(),
+      trend: '+live',
+      icon: FileText,
+      gradient: 'from-orange-600 to-amber-500',
+      glow: 'rgba(245,85,15,0.4)'
+    },
+    {
+      label: 'Approved',
+      value: claimsData.filter(c => ['APPROVED','Approved'].includes(c.status)).length.toLocaleString(),
+      trend: '',
+      icon: CheckCircle2,
+      gradient: 'from-emerald-500 to-teal-500',
+      glow: 'rgba(16,185,129,0.4)'
+    },
+    {
+      label: 'Pending Review',
+      value: claimsData.filter(c => ['PENDING','Pending','UNDER_REVIEW','Under Review'].includes(c.status)).length.toLocaleString(),
+      trend: '',
+      icon: Clock,
+      gradient: 'from-amber-500 to-orange-500',
+      glow: 'rgba(245,158,11,0.4)'
+    },
+    {
+      label: 'AI Flagged',
+      value: claimsData.filter(c => ['FLAGGED','Flagged'].includes(c.status)).length.toLocaleString(),
+      trend: '',
+      icon: AlertTriangle,
+      gradient: 'from-rose-500 to-pink-500',
+      glow: 'rgba(244,63,94,0.4)'
+    },
+  ], [claimsData]);
+
   const filtered = claimsData.filter(c => {
     const matchSearch =
       c.policy_holder?.toLowerCase().includes(search.toLowerCase()) ||
       c.id?.toLowerCase().includes(search.toLowerCase()) ||
       c.claim_type?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || c.status === statusFilter;
+    // Status filter: match against both UPPERCASE and Title Case variants
+    const statusMap = { 'Pending': ['PENDING','Pending'], 'Under Review': ['UNDER_REVIEW','Under Review'], 'Flagged': ['FLAGGED','Flagged'], 'Approved': ['APPROVED','Approved'] };
+    const matchStatus = statusFilter === 'All' || (statusMap[statusFilter] || [statusFilter]).includes(c.status);
     return matchSearch && matchStatus;
   });
 
@@ -191,18 +255,18 @@ export default function Claims() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[11px] font-black uppercase tracking-widest text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse inline-block" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-orange-500 bg-orange-600/10 border border-orange-600/20 px-3 py-1 rounded-full flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse inline-block" />
               Claims Management
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-white">
+          <h1 className="text-4xl font-black tracking-tight text-[color:var(--text-main)]">
             Claims{' '}
-            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #6366f1, #a855f7)' }}>
+            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #f5550f, #ff8a50)' }}>
               Database
             </span>
           </h1>
-          <p className="text-slate-500 mt-1.5 font-medium">
+          <p className="text-[color:var(--text-muted)] mt-1.5 font-medium">
             Verify, track, and process all incoming insurance claims in real-time.
           </p>
         </motion.div>
@@ -215,21 +279,21 @@ export default function Claims() {
         >
           <button
             onClick={handleRefresh}
-            className="p-2.5 rounded-xl text-slate-400 hover:text-indigo-400 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="p-2.5 rounded-xl text-[color:var(--text-muted)] hover:text-orange-500 transition-colors"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
           >
             <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
           <button
-            className="p-2.5 rounded-xl text-slate-400 hover:text-indigo-400 transition-colors"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="p-2.5 rounded-xl text-[color:var(--text-muted)] hover:text-orange-500 transition-colors"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
           >
             <Download className="w-5 h-5" />
           </button>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-xl"
-            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', boxShadow: '0 8px 32px rgba(99,102,241,0.4)' }}
+            style={{ background: 'linear-gradient(135deg, #f5550f 0%, #ff8a50 100%)', boxShadow: '0 8px 32px rgba(245,85,15,0.4)' }}
           >
             <Plus className="w-4 h-4" /> New Claim
           </button>
@@ -238,7 +302,7 @@ export default function Claims() {
 
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((stat, i) => (
+        {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 28, scale: 0.96 }}
@@ -246,20 +310,20 @@ export default function Claims() {
             transition={{ delay: i * 0.08 + 0.1, type: 'spring', stiffness: 120 }}
             whileHover={{ y: -5, scale: 1.02 }}
             className="relative overflow-hidden rounded-2xl p-5 cursor-pointer group"
-            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid rgba(255,255,255,0.07)' }}
+            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)', border: '1px solid var(--border-card)' }}
           >
             <div className={`absolute -right-8 -top-8 w-36 h-36 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-700 bg-gradient-to-br ${stat.gradient}`} />
             <div className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r ${stat.gradient} opacity-50`} />
             <div className="flex items-start justify-between mb-4 relative z-10">
               <div className={`p-2 rounded-xl bg-white/5 ring-1 ring-white/10`}>
-                <stat.icon className="w-4 h-4 text-white" />
+                <stat.icon className="w-4 h-4 text-[color:var(--text-main)]" />
               </div>
               <span className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/20">
                 <ArrowUpRight className="w-3 h-3" /> {stat.trend}
               </span>
             </div>
-            <p className="text-3xl font-black text-white tracking-tight relative z-10">{stat.value}</p>
-            <p className="text-xs font-semibold text-slate-500 mt-0.5 relative z-10">{stat.label}</p>
+            <p className="text-3xl font-black text-[color:var(--text-main)] tracking-tight relative z-10">{stat.value}</p>
+            <p className="text-xs font-semibold text-[color:var(--text-muted)] mt-0.5 relative z-10">{stat.label}</p>
           </motion.div>
         ))}
       </div>
@@ -272,14 +336,14 @@ export default function Claims() {
         className="flex flex-col sm:flex-row items-start sm:items-center gap-3"
       >
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--text-muted)]" />
           <input
             type="text"
             placeholder="Search claims, holders, or types…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -290,8 +354,8 @@ export default function Claims() {
               className="px-4 py-2 rounded-xl text-xs font-bold transition-all"
               style={
                 statusFilter === s
-                  ? { background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff', boxShadow: '0 4px 16px rgba(99,102,241,0.35)' }
-                  : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#64748b' }
+                  ? { background: 'linear-gradient(135deg, #f5550f, #ff8a50)', color: '#fff', boxShadow: '0 4px 16px rgba(245,85,15,0.35)' }
+                  : { background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)', color: '#64748b' }
               }
             >
               {s}
@@ -306,15 +370,15 @@ export default function Claims() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55, duration: 0.5 }}
         className="relative overflow-hidden rounded-2xl"
-        style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)' }}
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
       >
         {/* Top shimmer bar */}
-        <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(99,102,241,0.5), transparent)' }} />
+        <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: 'linear-gradient(90deg, transparent, rgba(245,85,15,0.5), transparent)' }} />
 
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <tr style={{ borderBottom: '1px solid var(--border-card)' }}>
                 {['Claim ID', 'Policyholder', 'Claim Type', 'Amount', 'Date', 'Risk Score', 'Status', 'Adjuster', ''].map(h => (
                   <th key={h} className="px-5 py-4 text-left text-[10px] font-black uppercase tracking-[0.12em] text-slate-600">{h}</th>
                 ))}
@@ -329,8 +393,8 @@ export default function Claims() {
                       animate={{ opacity: 1 }}
                       className="flex flex-col items-center gap-3"
                     >
-                      <RefreshCw className="w-8 h-8 text-indigo-400 animate-spin" />
-                      <p className="text-slate-400 font-medium">Loading claims from database...</p>
+                      <RefreshCw className="w-8 h-8 text-orange-500 animate-spin" />
+                      <p className="text-[color:var(--text-muted)] font-medium">Loading claims from database...</p>
                     </motion.div>
                   </td>
                 </tr>
@@ -346,32 +410,32 @@ export default function Claims() {
                     onMouseEnter={() => setHoveredRow(claim.id)}
                     onMouseLeave={() => setHoveredRow(null)}
                     className="group cursor-pointer transition-colors duration-150"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: hoveredRow === claim.id ? 'rgba(99,102,241,0.05)' : 'transparent' }}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', background: hoveredRow === claim.id ? 'rgba(245,85,15,0.05)' : 'transparent' }}
                   >
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="font-mono text-xs font-bold text-indigo-400">{claim.id}</span>
+                      <span className="font-mono text-xs font-bold text-orange-500">{claim.id}</span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shrink-0"
-                          style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-[color:var(--text-main)] shrink-0"
+                          style={{ background: 'linear-gradient(135deg, #f5550f, #ff8a50)' }}
                         >
                           {claim.policy_holder?.split(' ').map(n => n[0]).join('') || 'U'}
                         </div>
-                        <span className="text-sm font-semibold text-slate-200">{claim.policy_holder || 'Unknown'}</span>
+                        <span className="text-sm font-semibold text-[color:var(--text-main)]">{claim.policy_holder || 'Unknown'}</span>
                       </div>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="text-xs font-bold text-slate-400 px-2.5 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <span className="text-xs font-bold text-[color:var(--text-muted)] px-2.5 py-1 rounded-lg" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
                         {claim.claim_type || 'Unknown'}
                       </span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="text-sm font-bold text-white">${claim.amount?.toLocaleString() || '0'}</span>
+                      <span className="text-sm font-bold text-[color:var(--text-main)]">${claim.amount?.toLocaleString() || '0'}</span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="text-xs text-slate-500 font-medium">{claim.date || 'N/A'}</span>
+                      <span className="text-xs text-[color:var(--text-muted)] font-medium">{claim.date || 'N/A'}</span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <RiskMeter score={claim.risk_score || claim.ai_fraud_score || 0} />
@@ -389,7 +453,7 @@ export default function Claims() {
                             initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }}
                             className="flex justify-end gap-1"
                           >
-                            <button className="p-1.5 rounded-lg text-indigo-400 hover:text-indigo-300 transition-colors" style={{ background: 'rgba(99,102,241,0.12)' }}>
+                            <button className="p-1.5 rounded-lg text-orange-500 hover:text-orange-300 transition-colors" style={{ background: 'rgba(245,85,15,0.12)' }}>
                               <Eye className="w-3.5 h-3.5" />
                             </button>
                             <button
@@ -406,8 +470,8 @@ export default function Claims() {
                             </button>
                             <button
                               onClick={() => openDocModal(claim.id)}
-                              className="p-1.5 rounded-lg text-indigo-400 hover:text-indigo-300 transition-colors"
-                              style={{ background: 'rgba(99,102,241,0.12)' }}
+                              className="p-1.5 rounded-lg text-orange-500 hover:text-orange-300 transition-colors"
+                              style={{ background: 'rgba(245,85,15,0.12)' }}
                             >
                               <UploadCloud className="w-3.5 h-3.5" />
                             </button>
@@ -415,7 +479,7 @@ export default function Claims() {
                         ) : (
                           <motion.button
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            className="p-1.5 rounded-lg text-slate-700 hover:text-slate-400 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-700 hover:text-[color:var(--text-muted)] transition-colors"
                           >
                             <MoreVertical className="w-3.5 h-3.5" />
                           </motion.button>
@@ -435,22 +499,22 @@ export default function Claims() {
               className="flex flex-col items-center justify-center py-20 text-center"
             >
               <FileText className="w-12 h-12 text-slate-700 mb-4" />
-              <p className="text-slate-500 font-bold">No claims match your search.</p>
+              <p className="text-[color:var(--text-muted)] font-bold">No claims match your search.</p>
               <p className="text-slate-700 text-sm mt-1">Try adjusting your filters.</p>
             </motion.div>
           )}
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderTop: '1px solid var(--border-card)' }}>
           <p className="text-xs text-slate-600 font-medium">
-            Showing <span className="text-slate-400 font-bold">{filtered.length}</span> of <span className="text-slate-400 font-bold">1,247</span> claims
+            Showing <span className="text-[color:var(--text-muted)] font-bold">{filtered.length}</span> of <span className="text-[color:var(--text-muted)] font-bold">{claimsData.length.toLocaleString()}</span> claims
           </p>
           <div className="flex gap-2">
-            <button className="px-4 py-2 text-xs font-bold text-slate-500 rounded-xl hover:text-slate-300 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <button className="px-4 py-2 text-xs font-bold text-[color:var(--text-muted)] rounded-xl hover:text-[color:var(--text-main)] transition-colors" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
               ← Prev
             </button>
-            <button className="px-4 py-2 text-xs font-bold text-white rounded-xl transition-all hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', boxShadow: '0 4px 16px rgba(99,102,241,0.3)' }}>
+            <button className="px-4 py-2 text-xs font-bold text-[color:var(--text-main)] rounded-xl transition-all hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, #f5550f, #ff8a50)', boxShadow: '0 4px 16px rgba(245,85,15,0.3)' }}>
               Next →
             </button>
           </div>
@@ -475,58 +539,60 @@ export default function Claims() {
               transition={{ type: 'spring', stiffness: 280, damping: 22 }}
               onClick={e => e.stopPropagation()}
               className="relative overflow-hidden rounded-2xl p-8 w-full max-w-lg"
-              style={{ background: 'linear-gradient(135deg, #0d0f26 0%, #0a0c20 100%)', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 60px rgba(99,102,241,0.1)' }}
+              style={{ background: 'linear-gradient(135deg, #160d09 0%, #110906 100%)', border: '1px solid rgba(245,85,15,0.2)', boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 60px rgba(245,85,15,0.1)' }}
             >
-              <div className="absolute -right-16 -top-16 w-48 h-48 bg-indigo-600/20 blur-3xl rounded-full" />
-              <h2 className="text-xl font-black text-white mb-6 relative z-10 flex items-center gap-3">
-                <Zap className="w-5 h-5 text-indigo-400" /> Digitize New Claim
+              <div className="absolute -right-16 -top-16 w-48 h-48 bg-orange-700/20 blur-3xl rounded-full" />
+              <h2 className="text-xl font-black text-[color:var(--text-main)] mb-6 relative z-10 flex items-center gap-3">
+                <Zap className="w-5 h-5 text-orange-500" /> Digitize New Claim
               </h2>
               <div className="space-y-4 relative z-10">
                 {[
-                  { label: 'Policyholder Name', placeholder: 'Full legal name...' },
-                  { label: 'Claim Type', placeholder: 'Auto / Medical / Property...' },
-                  { label: 'Claim Amount ($)', placeholder: '0.00' },
+                  { label: 'Policyholder Name', placeholder: 'Full legal name...', value: newHolder, onChange: e => setNewHolder(e.target.value) },
+                  { label: 'Claim Type', placeholder: 'Auto / Medical / Property...', value: newType, onChange: e => setNewType(e.target.value) },
+                  { label: 'Claim Amount ($)', placeholder: '0.00', value: newAmount, onChange: e => setNewAmount(e.target.value) },
                 ].map(field => (
                   <div key={field.label}>
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 block">{field.label}</label>
+                    <label className="text-xs font-bold text-[color:var(--text-muted)] uppercase tracking-widest mb-1.5 block">{field.label}</label>
                     <input
+                      value={field.value}
+                      onChange={field.onChange}
                       placeholder={field.placeholder}
-                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
                     />
                   </div>
                 ))}
 
                 <div className="pt-2">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Document Verification</label>
+                  <label className="text-xs font-bold text-[color:var(--text-muted)] uppercase tracking-widest mb-2 block">Document Verification</label>
                   <div className="space-y-2">
                     <input
                       value={docImagePath}
                       onChange={e => setDocImagePath(e.target.value)}
                       placeholder="Document image path (server path)"
-                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
                     />
                     <input
                       value={docReferencePath}
                       onChange={e => setDocReferencePath(e.target.value)}
                       placeholder="Reference image path (optional)"
-                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                      className="w-full px-4 py-3 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+                      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
                     />
                     <button
                       onClick={handleVerifyDocument}
                       disabled={!docImagePath || docLoading}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow: '0 6px 24px rgba(99,102,241,0.3)' }}
+                      style={{ background: 'linear-gradient(135deg,#f5550f,#ff8a50)', boxShadow: '0 6px 24px rgba(245,85,15,0.3)' }}
                     >
                       {docLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
                       Verify Document
                     </button>
                     {docResult && !docResult.error && (
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[11px] text-[color:var(--text-muted)]">
                         Risk: <span className="text-emerald-400 font-bold">{docResult.risk_score ?? 'N/A'}</span> ·
-                        Status: <span className="text-indigo-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
+                        Status: <span className="text-orange-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
                       </div>
                     )}
                     {docResult?.error && (
@@ -535,11 +601,16 @@ export default function Claims() {
                   </div>
                 </div>
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setShowModal(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-200 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <button onClick={() => setShowModal(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-[color:var(--text-muted)] hover:text-[color:var(--text-main)] transition-colors" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
                     Cancel
                   </button>
-                  <button className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', boxShadow: '0 8px 32px rgba(99,102,241,0.4)' }}>
-                    Submit Claim
+                  <button 
+                    onClick={handleSubmitClaim}
+                    disabled={isSubmitting || !newHolder || !newType || !newAmount}
+                    className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2" 
+                    style={{ background: 'linear-gradient(135deg, #f5550f, #ff8a50)', boxShadow: '0 8px 32px rgba(245,85,15,0.4)' }}
+                  >
+                    {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Submit Claim'}
                   </button>
                 </div>
               </div>
@@ -566,50 +637,50 @@ export default function Claims() {
               transition={{ type: 'spring', stiffness: 280, damping: 22 }}
               onClick={e => e.stopPropagation()}
               className="relative overflow-hidden rounded-2xl p-8 w-full max-w-lg"
-              style={{ background: 'linear-gradient(135deg, #0d0f26 0%, #0a0c20 100%)', border: '1px solid rgba(99,102,241,0.2)', boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 60px rgba(99,102,241,0.1)' }}
+              style={{ background: 'linear-gradient(135deg, #160d09 0%, #110906 100%)', border: '1px solid rgba(245,85,15,0.2)', boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 60px rgba(245,85,15,0.1)' }}
             >
-              <div className="absolute -right-16 -top-16 w-48 h-48 bg-indigo-600/20 blur-3xl rounded-full" />
-              <h2 className="text-xl font-black text-white mb-6 relative z-10 flex items-center gap-3">
-                <UploadCloud className="w-5 h-5 text-indigo-400" /> Verify Document
+              <div className="absolute -right-16 -top-16 w-48 h-48 bg-orange-700/20 blur-3xl rounded-full" />
+              <h2 className="text-xl font-black text-[color:var(--text-main)] mb-6 relative z-10 flex items-center gap-3">
+                <UploadCloud className="w-5 h-5 text-orange-500" /> Verify Document
               </h2>
               {docClaimId && (
-                <p className="text-xs text-slate-500 mb-4">Claim: <span className="text-indigo-300 font-bold">{docClaimId}</span></p>
+                <p className="text-xs text-[color:var(--text-muted)] mb-4">Claim: <span className="text-orange-300 font-bold">{docClaimId}</span></p>
               )}
               <div className="space-y-3 relative z-10">
                 <input
                   value={docImagePath}
                   onChange={e => setDocImagePath(e.target.value)}
                   placeholder="Document image path (server path)"
-                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
                 />
                 <input
                   value={docReferencePath}
                   onChange={e => setDocReferencePath(e.target.value)}
                   placeholder="Reference image path (optional)"
-                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                  style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
                 />
                 <button
                   onClick={handleVerifyDocument}
                   disabled={!docImagePath || docLoading}
                   className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow: '0 6px 24px rgba(99,102,241,0.3)' }}
+                  style={{ background: 'linear-gradient(135deg,#f5550f,#ff8a50)', boxShadow: '0 6px 24px rgba(245,85,15,0.3)' }}
                 >
                   {docLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
                   Verify Now
                 </button>
                 {docResult && !docResult.error && (
-                  <div className="text-[11px] text-slate-400">
+                  <div className="text-[11px] text-[color:var(--text-muted)]">
                     Risk: <span className="text-emerald-400 font-bold">{docResult.risk_score ?? 'N/A'}</span> ·
-                    Status: <span className="text-indigo-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
+                    Status: <span className="text-orange-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
                   </div>
                 )}
                 {docResult?.error && (
                   <div className="text-[11px] text-rose-400 font-bold">{docResult.error}</div>
                 )}
                 <div className="flex gap-3 pt-2">
-                  <button onClick={() => setShowDocModal(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-slate-200 transition-colors" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <button onClick={() => setShowDocModal(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-[color:var(--text-muted)] hover:text-[color:var(--text-main)] transition-colors" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
                     Close
                   </button>
                 </div>

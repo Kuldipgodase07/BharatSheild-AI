@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const NOTIFS = [
@@ -15,8 +15,19 @@ export default function DashboardLayout() {
   const [time, setTime] = useState('');
   const [notifOpen, setNotifOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState({ top: 0, right: 0 });
+  const [isLightMode, setIsLightMode] = useState(false);
   const bellRef = useRef(null);
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (isLightMode) {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+    }
+  }, [isLightMode]);
+
+  const toggleTheme = () => setIsLightMode(!isLightMode);
 
   // Tick clock
   useEffect(() => {
@@ -79,11 +90,11 @@ export default function DashboardLayout() {
               right: dropdownPos.right,
               width: 320,
               zIndex: 9999,
-              background: '#0c0e22',
-              border: '1px solid rgba(99,102,241,0.25)',
+              background: '#140c09',
+              border: '1px solid rgba(245,85,15,0.25)',
               borderRadius: 16,
               overflow: 'hidden',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(99,102,241,0.08)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06), 0 0 80px rgba(245,85,15,0.08)',
             }}
           >
             {/* Header */}
@@ -93,12 +104,12 @@ export default function DashboardLayout() {
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '14px 18px',
-                borderBottom: '1px solid rgba(255,255,255,0.07)',
-                background: 'rgba(99,102,241,0.06)',
+                borderBottom: '1px solid var(--border-card)',
+                background: 'rgba(245,85,15,0.06)',
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Bell style={{ width: 14, height: 14, color: '#818cf8' }} />
+                <Bell style={{ width: 14, height: 14, color: '#ff8a50' }} />
                 <span style={{ fontSize: 11, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                   Notifications
                 </span>
@@ -128,11 +139,11 @@ export default function DashboardLayout() {
                   gap: 12,
                   padding: '14px 18px',
                   cursor: 'pointer',
-                  borderBottom: i < NOTIFS.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  borderBottom: i < NOTIFS.length - 1 ? '1px solid var(--border-card)' : 'none',
                   background: 'transparent',
                   transition: 'background 0.15s',
                 }}
-                whileHover={{ background: 'rgba(255,255,255,0.04)' }}
+                whileHover={{ background: 'var(--bg-card)' }}
               >
                 {/* Color dot */}
                 <div style={{
@@ -151,15 +162,15 @@ export default function DashboardLayout() {
             {/* Footer */}
             <div style={{
               padding: '10px 18px',
-              borderTop: '1px solid rgba(255,255,255,0.05)',
+              borderTop: '1px solid var(--border-card)',
               background: 'rgba(255,255,255,0.02)',
             }}>
               <button
                 onClick={() => setNotifOpen(false)}
                 style={{
                   width: '100%', padding: '8px', borderRadius: 10, fontSize: 11,
-                  fontWeight: 700, color: '#818cf8', background: 'rgba(99,102,241,0.1)',
-                  border: '1px solid rgba(99,102,241,0.2)', cursor: 'pointer',
+                  fontWeight: 700, color: '#ff8a50', background: 'rgba(245,85,15,0.1)',
+                  border: '1px solid rgba(245,85,15,0.2)', cursor: 'pointer',
                 }}
               >
                 View all notifications →
@@ -173,14 +184,14 @@ export default function DashboardLayout() {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#07091a' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
       <Sidebar />
       <main className="flex-1 overflow-y-auto relative flex flex-col">
 
         {/* Ambient glow layers */}
         <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(99,102,241,0.1) 0%, transparent 70%)', filter: 'blur(40px)' }} />
-          <div className="absolute bottom-0 right-0 w-[600px] h-[400px] rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)', filter: 'blur(60px)' }} />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(245,85,15,0.1) 0%, transparent 70%)', filter: 'blur(40px)' }} />
+          <div className="absolute bottom-0 right-0 w-[600px] h-[400px] rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(255,138,80,0.06) 0%, transparent 70%)', filter: 'blur(60px)' }} />
           <div className="absolute top-1/2 left-1/4 w-[400px] h-[300px] rounded-full" style={{ background: 'radial-gradient(ellipse, rgba(6,182,212,0.04) 0%, transparent 70%)', filter: 'blur(50px)' }} />
         </div>
 
@@ -190,15 +201,15 @@ export default function DashboardLayout() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
           className="hidden lg:flex items-center justify-between px-8 py-3 shrink-0 relative z-10"
-          style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(7,9,26,0.85)', backdropFilter: 'blur(16px)' }}
+          style={{ borderBottom: '1px solid var(--border-card)', background: 'var(--bg-secondary)', backdropFilter: 'blur(16px)' }}
         >
           {/* Live clock */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-mono font-bold text-slate-600">
+            <div className="flex items-center gap-2 text-xs font-mono font-bold text-[color:var(--text-muted)]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" style={{ boxShadow: '0 0 6px #10b981' }} />
               {time}
             </div>
-            <div className="text-xs text-slate-700 font-semibold px-2 py-0.5 rounded-md" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="text-xs text-[color:var(--text-muted)] font-semibold px-2 py-0.5 rounded-md" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
               Tue, 24 Mar 2026
             </div>
           </div>
@@ -206,12 +217,12 @@ export default function DashboardLayout() {
           <div className="flex items-center gap-3">
             {/* Global search hint */}
             <div
-              className="flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs text-slate-600 font-medium cursor-pointer hover:text-slate-400 transition-colors"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+              className="flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs text-[color:var(--text-muted)] font-medium cursor-pointer hover:text-[color:var(--text-muted)] transition-colors"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
             >
               <Search style={{ width: 13, height: 13 }} />
               Quick search…
-              <kbd className="text-[10px] font-bold text-slate-700 px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>⌘K</kbd>
+              <kbd className="text-[10px] font-bold text-[color:var(--text-muted)] px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border-card)' }}>⌘K</kbd>
             </div>
 
             {/* Notification bell (ref here, dropdown is a portal) */}
@@ -220,8 +231,8 @@ export default function DashboardLayout() {
               onClick={openNotif}
               className="relative p-2.5 rounded-xl transition-all duration-200"
               style={{
-                background: notifOpen ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.04)',
-                border: notifOpen ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)',
+                background: notifOpen ? 'rgba(245,85,15,0.15)' : 'var(--bg-card)',
+                border: notifOpen ? '1px solid rgba(245,85,15,0.4)' : '1px solid var(--border-card)',
                 color: notifOpen ? '#a5b4fc' : '#64748b',
               }}
             >
@@ -232,14 +243,27 @@ export default function DashboardLayout() {
               />
             </button>
 
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="relative p-2.5 rounded-xl transition-all duration-200"
+              style={{
+                background: isLightMode ? 'rgba(245,85,15,0.1)' : 'var(--bg-card)',
+                border: '1px solid var(--border-card)',
+                color: isLightMode ? '#f5550f' : '#64748b',
+              }}
+            >
+              {isLightMode ? <Moon style={{ width: 16, height: 16 }} /> : <Sun style={{ width: 16, height: 16 }} />}
+            </button>
+
             {/* User avatar */}
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white" style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)' }}>
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl cursor-pointer hover:opacity-80 transition-opacity" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-[color:var(--text-main)]" style={{ background: 'linear-gradient(135deg, #f5550f, #ff8a50)' }}>
                 AI
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-300 leading-none">Admin</p>
-                <p className="text-[10px] text-slate-600 font-medium mt-0.5">TruGuard</p>
+                <p className="text-xs font-bold text-[color:var(--text-main)] leading-none">Admin</p>
+                <p className="text-[10px] font-medium mt-0.5"><span className="text-[color:var(--text-muted)]">BharatShield</span><span className="text-transparent bg-clip-text font-bold" style={{ backgroundImage: 'linear-gradient(90deg, #f5550f, #ff8a50)' }}> AI</span></p>
               </div>
             </div>
           </div>

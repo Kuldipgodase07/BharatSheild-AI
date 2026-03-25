@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
+    <data-source source="LOCAL" name="Training" uuid="c176979b-de00-43e3-ba66-96371c09e390">
+      <driver-ref>sqlite.xerial</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+      <jdbc-url>jdbc:sqlite:D:\datascience\iNeuron\MLProjects\fraudDetection\Training_Database\Training.db</jdbc-url>
+    </data-source>
+  </component>
+</project>

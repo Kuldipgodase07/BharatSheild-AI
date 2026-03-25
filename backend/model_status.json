@@ -1,15 +1,15 @@
 {
   "version": "v2.4",
   "status": "All Systems Operational",
-  "accuracy": 100.0,
+  "accuracy": 99.7,
   "metrics": {
     "supervised_auc": {
-      "random_forest": 1.0,
-      "logistic_regression": 0.9946311475409836,
-      "xgboost": 1.0
+      "random_forest": 0.9970273709803028,
+      "logistic_regression": 0.9607337550097822,
+      "xgboost": 0.9964456664197391
     },
     "text_auc": 1.0,
-    "autoencoder_threshold": 1.1125969047643431
+    "autoencoder_threshold": 0.9857165733780215
   },
   "models": {
     "random_forest": true,
@@ -20,5 +20,5 @@
     "autoencoder": true,
     "text_model": true
   },
-  "updated_at": "2026-03-24T08:50:22Z"
+  "updated_at": "2026-03-24T19:34:04Z"
 }

@@ -119,17 +119,17 @@ const STATUS_CONFIG = {
 };
 
 const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg, #6366f1, #a855f7)',
-  'linear-gradient(135deg, #f43f5e, #ec4899)',
+  'linear-gradient(135deg, #f5550f, #ff8a50)',
+  'linear-gradient(135deg, #f43f5e, #ff5252)',
   'linear-gradient(135deg, #10b981, #06b6d4)',
   'linear-gradient(135deg, #f59e0b, #ef4444)',
-  'linear-gradient(135deg, #8b5cf6, #6366f1)',
-  'linear-gradient(135deg, #06b6d4, #6366f1)',
+  'linear-gradient(135deg, #8b5cf6, #f5550f)',
+  'linear-gradient(135deg, #06b6d4, #f5550f)',
 ];
 
 const SUMMARY_STATS = [
   { label: 'Active Policies', value: '4,218', Icon: ShieldCheck, color: '#10b981' },
-  { label: 'Total Covered', value: '$48.2M', Icon: BarChart3, color: '#6366f1' },
+  { label: 'Total Covered', value: '$48.2M', Icon: BarChart3, color: '#f5550f' },
   { label: 'High Risk', value: '137', Icon: ShieldAlert, color: '#f43f5e' },
   { label: 'Renewals Due', value: '29', Icon: Clock, color: '#f59e0b' },
 ];
@@ -154,18 +154,18 @@ export default function Policies() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <motion.div initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-[11px] font-black uppercase tracking-widest text-violet-400 bg-violet-500/10 border border-violet-500/20 px-3 py-1 rounded-full flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse inline-block" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
               Policy Registry
             </span>
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-white">
+          <h1 className="text-4xl font-black tracking-tight text-[color:var(--text-main)]">
             Policy{' '}
-            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #a855f7, #ec4899)' }}>
+            <span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #ff8a50, #ff5252)' }}>
               Holders
             </span>
           </h1>
-          <p className="text-slate-500 mt-1.5 font-medium">
+          <p className="text-[color:var(--text-muted)] mt-1.5 font-medium">
             Monitor risk levels and manage all active insurance policies.
           </p>
         </motion.div>
@@ -173,7 +173,7 @@ export default function Policies() {
         <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }} className="flex gap-3">
           <button
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-xl"
-            style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)', boxShadow: '0 8px 32px rgba(168,85,247,0.4)' }}
+            style={{ background: 'linear-gradient(135deg, #ff8a50, #f5550f)', boxShadow: '0 8px 32px rgba(255,138,80,0.4)' }}
           >
             <Plus className="w-4 h-4" /> Add Policy
           </button>
@@ -195,13 +195,13 @@ export default function Policies() {
             transition={{ delay: 0.12 + i * 0.07 }}
             whileHover={{ y: -3 }}
             className="flex items-center gap-4 rounded-2xl px-5 py-4"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
           >
             <div className="p-2 rounded-xl" style={{ background: `${s.color}18`, border: `1px solid ${s.color}30` }}>
               <s.Icon style={{ width: 16, height: 16, color: s.color }} />
             </div>
             <div>
-              <p className="text-xl font-black text-white leading-none">{s.value}</p>
+              <p className="text-xl font-black text-[color:var(--text-main)] leading-none">{s.value}</p>
               <p className="text-[11px] text-slate-600 font-semibold mt-0.5">{s.label}</p>
             </div>
           </motion.div>
@@ -216,14 +216,14 @@ export default function Policies() {
         className="flex flex-col sm:flex-row items-start sm:items-center gap-3"
       >
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--text-muted)]" />
           <input
             type="text"
             placeholder="Search policies, holders…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-violet-500 transition-all"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-all"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
           />
         </div>
         <div className="flex items-center gap-2">
@@ -234,8 +234,8 @@ export default function Policies() {
               className="px-4 py-2 rounded-xl text-xs font-bold transition-all"
               style={
                 riskFilter === r
-                  ? { background: 'linear-gradient(135deg, #a855f7, #6366f1)', color: '#fff', boxShadow: '0 4px 16px rgba(168,85,247,0.35)' }
-                  : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#64748b' }
+                  ? { background: 'linear-gradient(135deg, #ff8a50, #f5550f)', color: '#fff', boxShadow: '0 4px 16px rgba(255,138,80,0.35)' }
+                  : { background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)', color: '#64748b' }
               }
             >
               {r} Risk
@@ -265,7 +265,7 @@ export default function Policies() {
                 whileHover={{ y: -5 }}
                 onClick={() => setExpandedCard(isExpanded ? null : policy.id)}
                 className="relative overflow-hidden rounded-2xl p-5 cursor-pointer group"
-                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)', border: '1px solid rgba(255,255,255,0.07)', boxShadow: isExpanded ? '0 0 40px rgba(168,85,247,0.15), 0 20px 60px rgba(0,0,0,0.3)' : 'none' }}
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.015) 100%)', border: '1px solid var(--border-card)', boxShadow: isExpanded ? '0 0 40px rgba(255,138,80,0.15), 0 20px 60px rgba(0,0,0,0.3)' : 'none' }}
               >
                 {/* Animated top border */}
                 <motion.div
@@ -282,13 +282,13 @@ export default function Policies() {
                 <div className="flex items-start justify-between mb-4 relative z-10">
                   <div className="flex items-center gap-3">
                     <div
-                      className="w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-black text-white shrink-0 shadow-lg"
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-black text-[color:var(--text-main)] shrink-0 shadow-lg"
                       style={{ background: AVATAR_GRADIENTS[gradIdx] }}
                     >
                       {policy.initials}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-slate-200 leading-snug">{policy.holder}</p>
+                      <p className="text-sm font-bold text-[color:var(--text-main)] leading-snug">{policy.holder}</p>
                       <p className="text-[11px] font-mono text-slate-600">{policy.id}</p>
                     </div>
                   </div>
@@ -301,18 +301,18 @@ export default function Policies() {
 
                 {/* Policy Info */}
                 <div className="relative z-10 space-y-2.5">
-                  <div className="text-xs font-semibold text-slate-400 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="text-xs font-semibold text-[color:var(--text-muted)] px-3 py-2 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
                     {policy.type}
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="px-3 py-2 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
                       <p className="text-slate-600 font-semibold mb-0.5">Premium</p>
-                      <p className="text-white font-bold">{policy.premium}</p>
+                      <p className="text-[color:var(--text-main)] font-bold">{policy.premium}</p>
                     </div>
-                    <div className="px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div className="px-3 py-2 rounded-xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}>
                       <p className="text-slate-600 font-semibold mb-0.5">Coverage</p>
-                      <p className="text-white font-bold">{policy.coverageAmount}</p>
+                      <p className="text-[color:var(--text-main)] font-bold">{policy.coverageAmount}</p>
                     </div>
                   </div>
 
@@ -349,21 +349,21 @@ export default function Policies() {
                       transition={{ duration: 0.3, ease: 'easeOut' }}
                       className="relative z-10 overflow-hidden"
                     >
-                      <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border-card)' }}>
                         <div className="space-y-2 text-xs">
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-[color:var(--text-muted)]">
                             <Mail style={{ width: 12, height: 12 }} />
                             <span>{policy.email}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-[color:var(--text-muted)]">
                             <Phone style={{ width: 12, height: 12 }} />
                             <span>{policy.phone}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-[color:var(--text-muted)]">
                             <FileText style={{ width: 12, height: 12 }} />
                             <span>{policy.claims} claim{policy.claims !== 1 ? 's' : ''} filed</span>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-[color:var(--text-muted)]">
                             <Clock style={{ width: 12, height: 12 }} />
                             <span>Valid until {policy.endDate}</span>
                           </div>
@@ -371,8 +371,8 @@ export default function Policies() {
                         <div className="flex gap-2 mt-4">
                           <button
                             onClick={e => e.stopPropagation()}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
-                            style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold text-orange-500 hover:text-orange-300 transition-colors"
+                            style={{ background: 'rgba(245,85,15,0.1)', border: '1px solid rgba(245,85,15,0.2)' }}
                           >
                             <Eye style={{ width: 12, height: 12 }} /> View Details
                           </button>
@@ -409,7 +409,7 @@ export default function Policies() {
       {filtered.length === 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20">
           <Users className="w-12 h-12 text-slate-700 mb-4" />
-          <p className="text-slate-500 font-bold">No policies found.</p>
+          <p className="text-[color:var(--text-muted)] font-bold">No policies found.</p>
           <p className="text-slate-700 text-sm mt-1">Try adjusting your search or filter.</p>
         </motion.div>
       )}

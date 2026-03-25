@@ -39,7 +39,7 @@ export default function SplashScreen({ onComplete }) {
   return (
     <motion.div
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
-      style={{ background: 'linear-gradient(135deg, #04050f 0%, #07091a 50%, #0b0826 100%)' }}
+      style={{ background: 'linear-gradient(135deg, #080503 0%, #0d0907 50%, #120b08 100%)' }}
       exit={{ opacity: 0, scale: 1.05 }}
       transition={{ duration: 0.5 }}
     >
@@ -49,13 +49,13 @@ export default function SplashScreen({ onComplete }) {
           animate={{ scale: [1, 1.15, 1], opacity: [0.15, 0.3, 0.15] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(99,102,241,0.25) 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(ellipse, rgba(245,85,15,0.25) 0%, transparent 70%)' }}
         />
         <motion.div
           animate={{ scale: [1.1, 1, 1.1], opacity: [0.1, 0.2, 0.1] }}
           transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full"
-          style={{ background: 'radial-gradient(ellipse, rgba(168,85,247,0.2) 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(ellipse, rgba(255,138,80,0.2) 0%, transparent 70%)' }}
         />
       </div>
 
@@ -66,8 +66,8 @@ export default function SplashScreen({ onComplete }) {
           transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
           className="absolute inset-0 -m-8 rounded-full"
           style={{
-            border: '1px solid rgba(99,102,241,0.2)',
-            borderTopColor: 'rgba(99,102,241,0.8)',
+            border: '1px solid rgba(245,85,15,0.2)',
+            borderTopColor: 'rgba(245,85,15,0.8)',
             borderRadius: '50%',
             width: 120,
             height: 120,
@@ -81,8 +81,8 @@ export default function SplashScreen({ onComplete }) {
           transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
           style={{
             position: 'absolute',
-            border: '1px solid rgba(168,85,247,0.15)',
-            borderBottomColor: 'rgba(168,85,247,0.6)',
+            border: '1px solid rgba(255,138,80,0.15)',
+            borderBottomColor: 'rgba(255,138,80,0.6)',
             borderRadius: '50%',
             width: 150,
             height: 150,
@@ -99,11 +99,11 @@ export default function SplashScreen({ onComplete }) {
           transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.1 }}
           className="relative z-10 w-20 h-20 rounded-3xl flex items-center justify-center shadow-2xl"
           style={{
-            background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-            boxShadow: '0 0 60px rgba(99,102,241,0.6), 0 0 120px rgba(99,102,241,0.2)',
+            background: 'linear-gradient(135deg, #f5550f 0%, #ff8a50 100%)',
+            boxShadow: '0 0 60px rgba(245,85,15,0.6), 0 0 120px rgba(245,85,15,0.2)',
           }}
         >
-          <ShieldAlert className="w-10 h-10 text-white" />
+          <ShieldAlert className="w-10 h-10 text-[color:var(--text-main)]" />
 
           {/* Scan line */}
           <motion.div
@@ -122,8 +122,8 @@ export default function SplashScreen({ onComplete }) {
         transition={{ delay: 0.3 }}
         className="text-center mb-10"
       >
-        <h1 className="text-4xl font-black tracking-tight text-white">
-          Tru<span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #6366f1, #a855f7)' }}>Guard</span>
+        <h1 className="text-4xl font-black tracking-tight text-[color:var(--text-main)]">
+          BharatShield<span className="text-transparent bg-clip-text" style={{ backgroundImage: 'linear-gradient(90deg, #f5550f, #ff8a50)' }}> AI</span>
         </h1>
         <p className="text-xs font-bold tracking-[0.3em] text-slate-600 uppercase mt-1">AI Fraud Detection Platform</p>
       </motion.div>
@@ -143,19 +143,19 @@ export default function SplashScreen({ onComplete }) {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.25 }}
-              className="text-xs font-semibold text-slate-500"
+              className="text-xs font-semibold text-[color:var(--text-muted)]"
             >
               {currentStep.label}
             </motion.span>
           </AnimatePresence>
-          <span className="text-xs font-black text-indigo-400">{progress}%</span>
+          <span className="text-xs font-black text-orange-500">{progress}%</span>
         </div>
 
         {/* Bar */}
         <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
           <motion.div
             className="h-full rounded-full"
-            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #6366f1, #a855f7)', boxShadow: '0 0 16px rgba(99,102,241,0.7)' }}
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #f5550f, #ff8a50)', boxShadow: '0 0 16px rgba(245,85,15,0.7)' }}
             transition={{ duration: 0.1 }}
           />
         </div>
@@ -166,8 +166,8 @@ export default function SplashScreen({ onComplete }) {
             <div key={i} className="flex flex-col items-center gap-1">
               <motion.div
                 animate={{
-                  background: progress >= s.threshold ? '#6366f1' : 'rgba(255,255,255,0.08)',
-                  boxShadow: progress >= s.threshold ? '0 0 10px rgba(99,102,241,0.8)' : 'none',
+                  background: progress >= s.threshold ? '#f5550f' : 'rgba(255,255,255,0.08)',
+                  boxShadow: progress >= s.threshold ? '0 0 10px rgba(245,85,15,0.8)' : 'none',
                 }}
                 transition={{ duration: 0.3 }}
                 className="w-2 h-2 rounded-full"

@@ -79,7 +79,7 @@ function Tooltip({ visible, x, y, ptA, ptB, colorA, colorB, labelA, labelB, cont
           style={{
             position: 'absolute', left, top, zIndex: 60,
             background: 'rgba(6,8,26,0.97)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            border: '1px solid var(--border-card)',
             borderRadius: 14, padding: '11px 14px',
             pointerEvents: 'none',
             backdropFilter: 'blur(20px)',
@@ -111,7 +111,7 @@ function Tooltip({ visible, x, y, ptA, ptB, colorA, colorB, labelA, labelB, cont
 export default function GlowingChart({
   dataA, dataB,
   labelA = 'Legitimate', labelB = 'Fraudulent',
-  colorA = '#38bdf8', colorB = '#f471b5',
+  colorA = '#f59e0b', colorB = '#f43f5e',
   height = 280, live = false,
 }) {
   const containerRef = useRef(null);

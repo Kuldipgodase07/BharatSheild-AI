@@ -149,7 +149,7 @@ function buildData(preset, liveMinute = 0) {
 }
 
 const FRAUD_CATS = [
-  { name: 'Claim Inflation', value: 38, color: '#6366f1' },
+  { name: 'Claim Inflation', value: 38, color: '#f5550f' },
   { name: 'Identity Theft',  value: 27, color: '#f43f5e' },
   { name: 'Doc Forgery',     value: 19, color: '#f59e0b' },
   { name: 'Premium Fraud',   value: 16, color: '#10b981' },
@@ -175,7 +175,7 @@ const WEEKLY_ACC = [
 const DarkTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background:'rgba(10,12,30,0.98)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12, padding:'10px 14px', backdropFilter:'blur(12px)' }}>
+    <div style={{ background:'rgba(10,12,30,0.98)', border:'1px solid var(--border-card)', borderRadius:12, padding:'10px 14px', backdropFilter:'blur(12px)' }}>
       <p style={{ color:'#94a3b8', fontSize:11, marginBottom:6, fontWeight:700 }}>{label}</p>
       {payload.map((p,i) => (
         <p key={i} style={{ color:p.color, fontWeight:800, fontSize:13, margin:'2px 0' }}>
@@ -199,7 +199,7 @@ function MonthYearPicker({ onSelect, onClose }) {
       transition={{ duration:0.18, ease:[0.23,1,0.32,1] }}
       style={{
         position:'absolute', top:'calc(100% + 8px)', right:0, zIndex:9999,
-        background:'#0c0e22', border:'1px solid rgba(99,102,241,0.25)',
+        background:'#140c09', border:'1px solid rgba(245,85,15,0.25)',
         borderRadius:16, padding:20, width:280,
         boxShadow:'0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04)',
       }}
@@ -231,10 +231,10 @@ function MonthYearPicker({ onSelect, onClose }) {
                 padding:'8px 0', borderRadius:10, fontSize:12, fontWeight:700,
                 cursor: isFuture ? 'not-allowed' : 'pointer',
                 transition:'all 0.15s',
-                background: isCurrentMonth ? 'linear-gradient(135deg,#6366f1,#a855f7)' : 'rgba(255,255,255,0.04)',
-                border: isCurrentMonth ? 'none' : '1px solid rgba(255,255,255,0.07)',
+                background: isCurrentMonth ? 'linear-gradient(135deg,#f5550f,#ff8a50)' : 'var(--bg-card)',
+                border: isCurrentMonth ? 'none' : '1px solid var(--border-card)',
                 color: isFuture ? '#334155' : isCurrentMonth ? '#fff' : '#94a3b8',
-                boxShadow: isCurrentMonth ? '0 4px 16px rgba(99,102,241,0.4)' : 'none',
+                boxShadow: isCurrentMonth ? '0 4px 16px rgba(245,85,15,0.4)' : 'none',
               }}
             >
               {m}
@@ -245,7 +245,7 @@ function MonthYearPicker({ onSelect, onClose }) {
 
       <button
         onClick={onClose}
-        style={{ marginTop:12, width:'100%', padding:'8px', borderRadius:10, fontSize:11, fontWeight:700, color:'#475569', background:'rgba(255,255,255,0.03)', border:'1px solid rgba(255,255,255,0.07)', cursor:'pointer' }}
+        style={{ marginTop:12, width:'100%', padding:'8px', borderRadius:10, fontSize:11, fontWeight:700, color:'#475569', background:'var(--bg-card)', border:'1px solid var(--border-card)', cursor:'pointer' }}
       >
         Cancel
       </button>
@@ -272,7 +272,7 @@ function kpis(data) {
   const rate = totalClaims ? ((1 - totalFraud/totalClaims)*100).toFixed(1) : '–';
   const revenue = data.reduce((s,d) => s+d.revenue, 0).toFixed(1);
   return [
-    { label:'Detection Rate',    value:`${rate}%`,  change:'+2.1%', up:true,  icon:Target,       gradient:'from-indigo-500 to-violet-500', desc:'fraud caught by AI' },
+    { label:'Detection Rate',    value:`${rate}%`,  change:'+2.1%', up:true,  icon:Target,       gradient:'from-orange-600 to-amber-500', desc:'fraud caught by AI' },
     { label:'False Positives',   value:'0.6%',      change:'-0.3%', up:true,  icon:CheckCircle2, gradient:'from-emerald-500 to-teal-500', desc:'misclassification rate' },
     { label:'Avg Response Time', value:'1.4s',      change:'-0.2s', up:true,  icon:Zap,          gradient:'from-amber-500 to-orange-500', desc:'per claim analysis' },
     { label:'Revenue Saved',     value:`₹${revenue}L`, change:'+12%', up:true, icon:Shield,      gradient:'from-rose-500 to-pink-500', desc:'fraud prevented' },
@@ -343,8 +343,8 @@ export default function Analytics() {
           value: analyticsData.total_claims?.toLocaleString() || '0',
           trend: '+12.3%',
           icon: Activity,
-          gradient: 'from-indigo-500 to-violet-500',
-          glow: 'rgba(99,102,241,0.4)'
+          gradient: 'from-orange-600 to-amber-500',
+          glow: 'rgba(245,85,15,0.4)'
         },
         {
           label: 'Approved Claims',
@@ -485,18 +485,18 @@ export default function Analytics() {
               </span>
             )}
           </div>
-          <h1 className="text-4xl font-black tracking-tight text-white">
+          <h1 className="text-4xl font-black tracking-tight text-[color:var(--text-main)]">
             Fraud{' '}
-            <span className="text-transparent bg-clip-text" style={{ backgroundImage:'linear-gradient(90deg,#06b6d4,#6366f1)' }}>
+            <span className="text-transparent bg-clip-text" style={{ backgroundImage:'linear-gradient(90deg,#06b6d4,#f5550f)' }}>
               Analytics
             </span>
           </h1>
-          <p className="text-slate-500 mt-1.5 font-medium">AI-powered fraud intelligence, patterns and financial impact.</p>
+          <p className="text-[color:var(--text-muted)] mt-1.5 font-medium">AI-powered fraud intelligence, patterns and financial impact.</p>
 
           {/* Current range badge */}
           <div className="flex items-center gap-2 mt-3">
-            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-            <span className="text-xs font-bold text-indigo-300">{rangeLabel(preset)}</span>
+            <Calendar className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-xs font-bold text-orange-300">{rangeLabel(preset)}</span>
             {isCustom && (
               <button onClick={() => setPreset('6M')} className="text-[10px] text-slate-600 hover:text-rose-400 transition-colors ml-1">
                 <X className="w-3 h-3 inline" /> clear
@@ -511,7 +511,7 @@ export default function Analytics() {
           {/* Quick presets */}
           <div
             className="flex items-center rounded-xl overflow-hidden"
-            style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}
+            style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
           >
             {PRESETS.map(p => (
               <button
@@ -520,7 +520,7 @@ export default function Analytics() {
                 className="px-4 py-2.5 text-xs font-bold transition-all"
                 style={
                   preset === p.id
-                    ? { background:'linear-gradient(135deg,#6366f1,#a855f7)', color:'#fff', boxShadow:'inset 0 0 20px rgba(99,102,241,0.3)' }
+                    ? { background:'linear-gradient(135deg,#f5550f,#ff8a50)', color:'#fff', boxShadow:'inset 0 0 20px rgba(245,85,15,0.3)' }
                     : { color:'#64748b' }
                 }
               >
@@ -535,10 +535,10 @@ export default function Analytics() {
               onClick={() => setShowPicker(v => !v)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
               style={{
-                background: isCustom || showPicker ? 'linear-gradient(135deg,#6366f1,#a855f7)' : 'rgba(255,255,255,0.04)',
-                border: isCustom || showPicker ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.08)',
+                background: isCustom || showPicker ? 'linear-gradient(135deg,#f5550f,#ff8a50)' : 'var(--bg-card)',
+                border: isCustom || showPicker ? '1px solid rgba(245,85,15,0.4)' : '1px solid var(--border-card)',
                 color: isCustom || showPicker ? '#fff' : '#94a3b8',
-                boxShadow: isCustom || showPicker ? '0 4px 20px rgba(99,102,241,0.35)' : 'none',
+                boxShadow: isCustom || showPicker ? '0 4px 20px rgba(245,85,15,0.35)' : 'none',
               }}
             >
               <Calendar className="w-3.5 h-3.5" />
@@ -560,8 +560,8 @@ export default function Analytics() {
           <button
             onClick={fetchAnalyticsData}
             disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition-all disabled:opacity-50"
-            style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-[color:var(--text-main)] hover:text-white transition-all disabled:opacity-50"
+            style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
           >
             <Activity className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Loading...' : 'Refresh'}
@@ -571,7 +571,7 @@ export default function Analytics() {
           <button
             onClick={handleExport}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95"
-            style={{ background:'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow:'0 6px 24px rgba(99,102,241,0.4)' }}
+            style={{ background:'linear-gradient(135deg,#f5550f,#ff8a50)', boxShadow:'0 6px 24px rgba(245,85,15,0.4)' }}
           >
             <Download className="w-3.5 h-3.5" /> Export
           </button>
@@ -584,11 +584,11 @@ export default function Analytics() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
         className="rounded-2xl p-5"
-        style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(255,255,255,0.07)' }}
+        style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
       >
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h3 className="text-sm font-black text-white">Forgery Detection</h3>
+            <h3 className="text-sm font-black text-[color:var(--text-main)]">Forgery Detection</h3>
             <p className="text-xs text-slate-600">Verify documents and signatures (server file paths)</p>
           </div>
           <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-full">
@@ -600,30 +600,30 @@ export default function Analytics() {
             value={docImagePath}
             onChange={e => setDocImagePath(e.target.value)}
             placeholder="Document image path"
-            className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-            style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}
+            className="px-4 py-2.5 rounded-xl text-xs font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+            style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
           />
           <input
             value={docReferencePath}
             onChange={e => setDocReferencePath(e.target.value)}
             placeholder="Reference image path (optional)"
-            className="px-4 py-2.5 rounded-xl text-xs font-medium text-slate-300 placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-            style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)' }}
+            className="px-4 py-2.5 rounded-xl text-xs font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
+            style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
           />
           <button
             onClick={handleVerifyDoc}
             disabled={!docImagePath || docLoading}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
-            style={{ background:'linear-gradient(135deg,#6366f1,#a855f7)', boxShadow:'0 6px 24px rgba(99,102,241,0.4)' }}
+            style={{ background:'linear-gradient(135deg,#f5550f,#ff8a50)', boxShadow:'0 6px 24px rgba(245,85,15,0.4)' }}
           >
             {docLoading ? <Activity className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
             Verify
           </button>
         </div>
         {docResult && !docResult.error && (
-          <div className="text-[11px] text-slate-400 mt-3">
+          <div className="text-[11px] text-[color:var(--text-muted)] mt-3">
             Risk: <span className="text-emerald-400 font-bold">{docResult.risk_score ?? 'N/A'}</span> ·
-            Status: <span className="text-indigo-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
+            Status: <span className="text-orange-300 font-bold">{docResult.is_fraud === null ? 'Unknown' : docResult.is_fraud ? 'Fraud' : 'Legit'}</span>
           </div>
         )}
         {docResult?.error && (
@@ -649,21 +649,21 @@ export default function Analytics() {
               transition={{ delay:i*0.07, type:'spring', stiffness:140 }}
               whileHover={{ y:-5, scale:1.02 }}
               className="relative overflow-hidden rounded-2xl p-5 group cursor-pointer"
-              style={{ background:'linear-gradient(135deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.01) 100%)', border:'1px solid rgba(255,255,255,0.07)' }}
+              style={{ background:'linear-gradient(135deg,rgba(255,255,255,0.04) 0%,rgba(255,255,255,0.01) 100%)', border:'1px solid var(--border-card)' }}
             >
               <div className={`absolute -right-8 -top-8 w-36 h-36 rounded-full blur-3xl opacity-20 group-hover:opacity-30 transition-opacity duration-700 bg-gradient-to-br ${kpi.gradient}`} />
               <div className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r ${kpi.gradient} opacity-50`} />
               <div className="flex items-start justify-between mb-3 relative z-10">
                 <div className="p-2 rounded-xl bg-white/5 ring-1 ring-white/10">
-                  <kpi.icon className="w-4 h-4 text-white" />
+                  <kpi.icon className="w-4 h-4 text-[color:var(--text-main)]" />
                 </div>
                 <span className={`flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${kpi.up ? 'text-emerald-400 bg-emerald-500/10 ring-1 ring-emerald-500/20' : 'text-rose-400 bg-rose-500/10 ring-1 ring-rose-500/20'}`}>
                   {kpi.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                   {kpi.change}
                 </span>
               </div>
-              <p className="text-3xl font-black text-white tracking-tight relative z-10">{kpi.value}</p>
-              <p className="text-xs font-semibold text-slate-500 mt-0.5 relative z-10">{kpi.label}</p>
+              <p className="text-3xl font-black text-[color:var(--text-main)] tracking-tight relative z-10">{kpi.value}</p>
+              <p className="text-xs font-semibold text-[color:var(--text-muted)] mt-0.5 relative z-10">{kpi.label}</p>
               <p className="text-[10px] text-slate-700 mt-0.5 relative z-10">{kpi.desc}</p>
             </motion.div>
           ))}
@@ -680,14 +680,14 @@ export default function Analytics() {
             initial={{ opacity:0, y:24 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
             transition={{ delay:0.15, duration:0.5 }}
             className="lg:col-span-2 relative overflow-hidden rounded-2xl p-6"
-            style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(255,255,255,0.07)' }}
+            style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
           >
-            <div className="absolute -left-16 bottom-0 w-56 h-56 bg-indigo-500/8 blur-3xl rounded-full pointer-events-none" />
+            <div className="absolute -left-16 bottom-0 w-56 h-56 bg-orange-600/8 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center justify-between mb-4 relative z-10">
               <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <h2 className="text-base font-bold text-[color:var(--text-main)] flex items-center gap-2">
                   Claims vs Fraud —
-                  <span className="text-indigo-400">{rangeLabel(preset)}</span>
+                  <span className="text-orange-500">{rangeLabel(preset)}</span>
                   {isToday && (
                     <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
@@ -696,22 +696,22 @@ export default function Analytics() {
                   )}
                 </h2>
                 {isToday
-                  ? <p className="text-xs text-slate-600 mt-0.5">Solid = actual · Dashed = AI prediction · Current time: <span className="text-indigo-400 font-mono font-bold">{liveTime}</span></p>
+                  ? <p className="text-xs text-slate-600 mt-0.5">Solid = actual · Dashed = AI prediction · Current time: <span className="text-orange-500 font-mono font-bold">{liveTime}</span></p>
                   : <p className="text-xs text-slate-600 mt-0.5">Volume trend for the selected period</p>
                 }
               </div>
               <div className="flex items-center gap-3 flex-wrap justify-end">
                 {isToday ? (
                   <>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium"><span className="w-5 h-1 rounded bg-indigo-500 inline-block" /> Actual</div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
-                      <span className="inline-block" style={{ width:20, height:2, background:'repeating-linear-gradient(90deg,#818cf8 0,#818cf8 4px,transparent 4px,transparent 8px)' }} /> Predicted
+                    <div className="flex items-center gap-1.5 text-xs text-[color:var(--text-muted)] font-medium"><span className="w-5 h-1 rounded bg-orange-600 inline-block" /> Actual</div>
+                    <div className="flex items-center gap-1.5 text-xs text-[color:var(--text-muted)] font-medium">
+                      <span className="inline-block" style={{ width:20, height:2, background:'repeating-linear-gradient(90deg,#ff8a50 0,#ff8a50 4px,transparent 4px,transparent 8px)' }} /> Predicted
                     </div>
                   </>
                 ) : (
                   <>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium"><span className="w-3 h-3 rounded-full bg-indigo-500 inline-block" /> Claims</div>
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium"><span className="w-3 h-3 rounded-full bg-rose-500 inline-block" /> Fraud</div>
+                    <div className="flex items-center gap-1.5 text-xs text-[color:var(--text-muted)] font-medium"><span className="w-3 h-3 rounded-full bg-orange-600 inline-block" /> Claims</div>
+                    <div className="flex items-center gap-1.5 text-xs text-[color:var(--text-muted)] font-medium"><span className="w-3 h-3 rounded-full bg-rose-500 inline-block" /> Fraud</div>
                   </>
                 )}
               </div>
@@ -724,8 +724,8 @@ export default function Analytics() {
                   <ComposedChart data={data} margin={{ top:5, right:5, left:-20, bottom:0 }}>
                     <defs>
                       <linearGradient id="aActualClaims" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.5} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0.02} />
+                        <stop offset="5%"  stopColor="#f5550f" stopOpacity={0.5} />
+                        <stop offset="95%" stopColor="#f5550f" stopOpacity={0.02} />
                       </linearGradient>
                       <linearGradient id="aActualFraud" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%"  stopColor="#f43f5e" stopOpacity={0.45} />
@@ -733,8 +733,8 @@ export default function Analytics() {
                       </linearGradient>
                       {/* Future prediction zone — subtle tinted background */}
                       <linearGradient id="predZone" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%"  stopColor="#6366f1" stopOpacity={0.07} />
-                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                        <stop offset="0%"  stopColor="#f5550f" stopOpacity={0.07} />
+                        <stop offset="100%" stopColor="#f5550f" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
@@ -745,13 +745,13 @@ export default function Analytics() {
                     {/* NOW reference line */}
                     <ReferenceLine
                       x={currentHourLabel}
-                      stroke="rgba(99,102,241,0.7)"
+                      stroke="rgba(245,85,15,0.7)"
                       strokeWidth={2}
                       strokeDasharray="4 2"
                       label={{
                         value: 'NOW',
                         position: 'top',
-                        fill: '#818cf8',
+                        fill: '#ff8a50',
                         fontSize: 10,
                         fontWeight: 800,
                       }}
@@ -760,10 +760,10 @@ export default function Analytics() {
                     {/* Solid actual claims area (past + current) */}
                     <Area
                       type="monotone" dataKey="actual_claims" name="Claims (actual)"
-                      stroke="#6366f1" strokeWidth={2.5}
+                      stroke="#f5550f" strokeWidth={2.5}
                       fillOpacity={1} fill="url(#aActualClaims)"
                       connectNulls={false}
-                      dot={false} activeDot={{ r:5, fill:'#818cf8' }}
+                      dot={false} activeDot={{ r:5, fill:'#ff8a50' }}
                     />
                     {/* Solid actual fraud */}
                     <Area
@@ -776,7 +776,7 @@ export default function Analytics() {
                     {/* Dashed predicted claims line */}
                     <Line
                       type="monotone" dataKey="predict_claims" name="Claims (predicted)"
-                      stroke="#818cf8" strokeWidth={1.5}
+                      stroke="#ff8a50" strokeWidth={1.5}
                       strokeDasharray="6 4"
                       dot={false} activeDot={{ r:4 }}
                       connectNulls={false}
@@ -795,8 +795,8 @@ export default function Analytics() {
                   <AreaChart data={data} margin={{ top:5, right:5, left:-20, bottom:0 }}>
                     <defs>
                       <linearGradient id="aClaims" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.45} />
-                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                        <stop offset="5%"  stopColor="#f5550f" stopOpacity={0.45} />
+                        <stop offset="95%" stopColor="#f5550f" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="aFraud" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%"  stopColor="#f43f5e" stopOpacity={0.45} />
@@ -809,7 +809,7 @@ export default function Analytics() {
                     />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill:'#475569', fontSize:11 }} />
                     <RechartsTooltip content={<DarkTooltip />} />
-                    <Area type="monotone" dataKey="claims" name="Claims" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#aClaims)" />
+                    <Area type="monotone" dataKey="claims" name="Claims" stroke="#f5550f" strokeWidth={2.5} fillOpacity={1} fill="url(#aClaims)" />
                     <Area type="monotone" dataKey="fraud"  name="Fraud"  stroke="#f43f5e" strokeWidth={2.5} fillOpacity={1} fill="url(#aFraud)" />
                   </AreaChart>
                 )}
@@ -821,9 +821,9 @@ export default function Analytics() {
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
                 <div className="flex items-center gap-1.5">
                   <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                  <span className="text-[11px] font-bold text-slate-500">
-                    Past: <span className="text-white">{currentHour}h</span> recorded ·
-                    Remaining: <span className="text-indigo-400">{23 - currentHour}h predicted</span>
+                  <span className="text-[11px] font-bold text-[color:var(--text-muted)]">
+                    Past: <span className="text-[color:var(--text-main)]">{currentHour}h</span> recorded ·
+                    Remaining: <span className="text-orange-500">{23 - currentHour}h predicted</span>
                   </span>
                 </div>
                 <span className="text-[10px] font-mono text-slate-700">Updates every second</span>
@@ -836,9 +836,9 @@ export default function Analytics() {
         <motion.div
           initial={{ opacity:0, x:30 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.3 }}
           className="relative overflow-hidden rounded-2xl p-6"
-          style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(255,255,255,0.07)' }}
+          style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
         >
-          <h2 className="text-base font-bold text-white mb-1">Fraud Categories</h2>
+          <h2 className="text-base font-bold text-[color:var(--text-main)] mb-1">Fraud Categories</h2>
           <p className="text-xs text-slate-600 mb-4">Distribution by fraud type</p>
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -864,11 +864,11 @@ export default function Analytics() {
                 className="flex items-center justify-between cursor-pointer"
                 onMouseEnter={() => setActiveCategory(i)} onMouseLeave={() => setActiveCategory(null)}
               >
-                <div className="flex items-center gap-2 text-xs text-slate-400 font-medium">
+                <div className="flex items-center gap-2 text-xs text-[color:var(--text-muted)] font-medium">
                   <span className="w-2 h-2 rounded-full inline-block" style={{ background:f.color }} />
                   {f.name}
                 </div>
-                <span className="text-xs font-bold text-white">{f.value}%</span>
+                <span className="text-xs font-bold text-[color:var(--text-main)]">{f.value}%</span>
               </motion.div>
             ))}
           </div>
@@ -881,11 +881,11 @@ export default function Analytics() {
         <motion.div
           initial={{ opacity:0, y:28 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.4 }}
           className="relative overflow-hidden rounded-2xl p-6"
-          style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(255,255,255,0.07)' }}
+          style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
         >
           <div className="flex items-center gap-2 mb-1">
-            <Activity className="w-4 h-4 text-violet-400" />
-            <h2 className="text-base font-bold text-white">AI Accuracy This Week</h2>
+            <Activity className="w-4 h-4 text-amber-400" />
+            <h2 className="text-base font-bold text-[color:var(--text-main)]">AI Accuracy This Week</h2>
           </div>
           <p className="text-xs text-slate-600 mb-5">Daily model performance</p>
           <div className="h-[200px]">
@@ -893,8 +893,8 @@ export default function Analytics() {
               <LineChart data={WEEKLY_ACC} margin={{ top:5, right:10, left:-20, bottom:0 }}>
                 <defs>
                   <linearGradient id="accGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%"   stopColor="#6366f1" />
-                    <stop offset="100%" stopColor="#a855f7" />
+                    <stop offset="0%"   stopColor="#f5550f" />
+                    <stop offset="100%" stopColor="#ff8a50" />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.04)" />
@@ -902,7 +902,7 @@ export default function Analytics() {
                 <YAxis axisLine={false} tickLine={false} tick={{ fill:'#475569', fontSize:12 }} domain={[97,100]} />
                 <RechartsTooltip content={<DarkTooltip />} />
                 <Line type="monotone" dataKey="accuracy" name="Accuracy %" stroke="url(#accGrad)" strokeWidth={3}
-                  dot={{ fill:'#a855f7', r:4, strokeWidth:0 }} activeDot={{ r:6 }}
+                  dot={{ fill:'#ff8a50', r:4, strokeWidth:0 }} activeDot={{ r:6 }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -913,20 +913,20 @@ export default function Analytics() {
         <motion.div
           initial={{ opacity:0, y:28 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }}
           className="relative overflow-hidden rounded-2xl p-6"
-          style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(255,255,255,0.07)' }}
+          style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
         >
           <div className="flex items-center gap-2 mb-1">
             <Globe className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-base font-bold text-white">Regional Risk Index</h2>
+            <h2 className="text-base font-bold text-[color:var(--text-main)]">Regional Risk Index</h2>
           </div>
           <p className="text-xs text-slate-600 mb-5">Fraud risk score by city</p>
           <div className="space-y-3">
             {REGIONAL.map((r,i) => {
-              const color = r.risk>=80?'#f43f5e':r.risk>=60?'#f59e0b':r.risk>=40?'#6366f1':'#10b981';
+              const color = r.risk>=80?'#f43f5e':r.risk>=60?'#f59e0b':r.risk>=40?'#f5550f':'#10b981';
               return (
                 <motion.div key={r.region} initial={{ opacity:0, x:-12 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.55+i*0.06 }}>
                   <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="font-semibold text-slate-400">{r.region}</span>
+                    <span className="font-semibold text-[color:var(--text-muted)]">{r.region}</span>
                     <div className="flex items-center gap-3">
                       <span className="text-slate-600">{r.claims} claims</span>
                       <span className="font-black w-8 text-right" style={{ color }}>{r.risk}</span>
@@ -954,19 +954,19 @@ export default function Analytics() {
           initial={{ opacity:0, y:28 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
           transition={{ delay:0.55, duration:0.5 }}
           className="relative overflow-hidden rounded-2xl p-6"
-          style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(255,255,255,0.07)' }}
+          style={{ background:'var(--bg-card)', border:'1px solid var(--border-card)' }}
         >
           <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background:'linear-gradient(90deg,transparent,rgba(16,185,129,0.5),transparent)' }} />
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <h2 className="text-base font-bold text-[color:var(--text-main)] flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
                 Revenue Saved — <span className="text-emerald-400">{rangeLabel(preset)}</span>
               </h2>
               <p className="text-xs text-slate-600 mt-0.5">Financial impact of fraud prevention (₹ Lakhs)</p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-black text-white">₹{data.reduce((s,d)=>s+d.revenue,0).toFixed(1)}L</p>
+              <p className="text-2xl font-black text-[color:var(--text-main)]">₹{data.reduce((s,d)=>s+d.revenue,0).toFixed(1)}L</p>
               <p className="text-xs text-emerald-400 font-bold flex items-center gap-1 justify-end">
                 <ArrowUpRight className="w-3 h-3" /> vs prior period
               </p>
@@ -986,7 +986,7 @@ export default function Analytics() {
                   interval={preset==='1M'||preset==='TODAY' ? Math.floor(data.length/8) : 0}
                 />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill:'#475569', fontSize:11 }} />
-                <RechartsTooltip content={<DarkTooltip />} cursor={{ fill:'rgba(255,255,255,0.03)' }} />
+                <RechartsTooltip content={<DarkTooltip />} cursor={{ fill:'var(--bg-card)' }} />
                 <Bar dataKey="revenue" name="Revenue Saved (₹L)" fill="url(#revGrad)" radius={[5,5,0,0]} />
               </BarChart>
             </ResponsiveContainer>
