@@ -12,8 +12,9 @@ import {
   ResponsiveContainer, PieChart as RPieChart, Pie, Cell,
   ReferenceLine, ReferenceDot
 } from 'recharts';
-import { getAnalytics, verifyDocument } from '../utils/api';
+import { getClaims, verifyDocument } from '../utils/api';
 import { downloadCsv } from '../utils/export';
+import { processRealTimeClaims, processRealTimeKPIs } from '../utils/realtime-analytics';
 
 // ─── Generate realistic data for any range ──────────────────────────────────
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -302,12 +303,12 @@ export default function Analytics() {
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
-      const data = await getAnalytics();
+      const data = await getClaims(); // get raw dynamic DB claims
       if (data) {
-        setAnalyticsData(data);
+        setAnalyticsData(data); // analyticsData is now our raw dynamic dataset
       }
     } catch (error) {
-      console.error('Failed to fetch analytics:', error);
+      console.error('Failed to fetch realtime data:', error);
     } finally {
       setLoading(false);
     }
@@ -333,65 +334,83 @@ export default function Analytics() {
     return () => clearInterval(id);
   }, []);
 
-  const data = useMemo(() => buildData(preset, liveMinute), [preset, liveMinute]);
+  // Real time aggregation hooks
+  const data = useMemo(() => {
+     if (!analyticsData || analyticsData.length === 0) return buildData(preset, liveMinute); // Fallback only if absolutely 0 rows in DB
+     return processRealTimeClaims(analyticsData, preset);
+  }, [preset, liveMinute, analyticsData]);
+
   const kpiCards = useMemo(() => {
-    if (analyticsData) {
-      // Use real analytics data from backend
+    if (analyticsData && analyticsData.length > 0) {
+      const kpi = processRealTimeKPIs(analyticsData);
       return [
         {
           label: 'Total Claims',
-          value: analyticsData.total_claims?.toLocaleString() || '0',
-          trend: '+12.3%',
+          value: kpi.total_claims.toLocaleString(),
+          trend: 'Live',
+          up: true,
           icon: Activity,
           gradient: 'from-orange-600 to-amber-500',
-          glow: 'rgba(245,85,15,0.4)'
+          desc: 'real-time DB volume'
         },
         {
           label: 'Approved Claims',
-          value: analyticsData.approved_claims?.toLocaleString() || '0',
-          trend: '+5.1%',
+          value: kpi.approved_claims.toLocaleString(),
+          trend: 'Live',
+          up: true,
           icon: CheckCircle2,
           gradient: 'from-emerald-500 to-teal-500',
-          glow: 'rgba(16,185,129,0.4)'
+          desc: 'approved standard claims'
         },
         {
           label: 'Pending Review',
-          value: analyticsData.pending_claims?.toLocaleString() || '0',
-          trend: '-3.2%',
+          value: kpi.pending_claims.toLocaleString(),
+          trend: 'Live',
+          up: false,
           icon: Calendar,
           gradient: 'from-amber-500 to-orange-500',
-          glow: 'rgba(245,158,11,0.4)'
+          desc: 'awaiting adjuster'
         },
         {
           label: 'AI Flagged Fraud',
-          value: analyticsData.flagged_claims?.toLocaleString() || '0',
-          trend: '+8.7%',
+          value: kpi.flagged_claims.toLocaleString(),
+          trend: 'Live',
+          up: false,
           icon: Shield,
           gradient: 'from-rose-500 to-pink-500',
-          glow: 'rgba(244,63,94,0.4)'
+          desc: 'caught by AI engine'
         },
         {
           label: 'Active Policies',
-          value: analyticsData.active_policies?.toLocaleString() || '0',
-          trend: '+15.2%',
+          value: kpi.active_policies.toLocaleString(),
+          trend: 'Live',
+          up: true,
           icon: Target,
           gradient: 'from-cyan-500 to-blue-500',
-          glow: 'rgba(6,182,212,0.4)'
+          desc: 'estimated coverage'
         },
         {
-          label: 'Total Revenue',
-          value: `$${(analyticsData.total_revenue / 1000000)?.toFixed(1) || '0'}M`,
-          trend: '+18.9%',
+          label: 'Total Platform Value',
+          value: `₹${(kpi.total_revenue / 100000).toFixed(1)}L`,
+          trend: 'Live',
+          up: true,
           icon: TrendingUp,
           gradient: 'from-green-500 to-emerald-500',
-          glow: 'rgba(34,197,94,0.4)'
+          desc: 'sum of claim amounts'
         }
       ];
     } else {
-      // Fallback to synthetic data
       return kpis(data);
     }
   }, [analyticsData, data]);
+
+  const fraudCats = useMemo(() => {
+    if (analyticsData && analyticsData.length > 0) {
+      const kpi = processRealTimeKPIs(analyticsData);
+      return kpi.fraud_categories || FRAUD_CATS;
+    }
+    return FRAUD_CATS;
+  }, [analyticsData]);
 
   const handleExport = useCallback(() => {
     const columns = [
@@ -843,11 +862,11 @@ export default function Analytics() {
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
               <RPieChart>
-                <Pie data={FRAUD_CATS} cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={3} dataKey="value"
+                <Pie data={fraudCats} cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={3} dataKey="value"
                   onMouseEnter={(_,idx) => setActiveCategory(idx)}
                   onMouseLeave={() => setActiveCategory(null)}
                 >
-                  {FRAUD_CATS.map((e,i) => (
+                  {fraudCats.map((e,i) => (
                     <Cell key={e.name} fill={e.color}
                       opacity={activeCategory===null||activeCategory===i ? 1 : 0.3}
                       style={{ cursor:'pointer', transition:'opacity 0.2s' }}
@@ -859,7 +878,7 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
           <div className="space-y-2 mt-2">
-            {FRAUD_CATS.map((f,i) => (
+            {fraudCats.map((f,i) => (
               <motion.div key={f.name} initial={{ opacity:0, x:10 }} animate={{ opacity:1, x:0 }} transition={{ delay:0.4+i*0.07 }}
                 className="flex items-center justify-between cursor-pointer"
                 onMouseEnter={() => setActiveCategory(i)} onMouseLeave={() => setActiveCategory(null)}
@@ -868,7 +887,7 @@ export default function Analytics() {
                   <span className="w-2 h-2 rounded-full inline-block" style={{ background:f.color }} />
                   {f.name}
                 </div>
-                <span className="text-xs font-bold text-[color:var(--text-main)]">{f.value}%</span>
+                <span className="text-xs font-bold text-[color:var(--text-main)]">{f.value} Claims</span>
               </motion.div>
             ))}
           </div>

@@ -1,0 +1,120 @@
+﻿
+> frontend@0.0.0 lint
+> eslint .
+
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\App.jsx
+  11:2  error  Parsing error: Unexpected token <<
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\components\GlowingChart.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         no-unused-vars
+   64:7   error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  62 |   const W = 165, H = 88;
+  63 |   let left = x + 14, top = y - H / 2;
+> 64 |   if (containerRef.current) {
+     |       ^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  65 |     const r = containerRef.current.getBoundingClientRect();
+  66 |     if (left + W > r.width - 8) left = x - W - 14;
+  67 |     if (top < 4) top = 4;                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/refs
+   65:15  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  63 |   let left = x + 14, top = y - H / 2;
+  64 |   if (containerRef.current) {
+> 65 |     const r = containerRef.current.getBoundingClientRect();
+     |               ^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  66 |     if (left + W > r.width - 8) left = x - W - 14;
+  67 |     if (top < 4) top = 4;
+  68 |     if (top + H > r.height - 4) top = r.height - H - 4;                                                                                                                                                                                                                                                                                                                                                                            react-hooks/refs
+   65:15  error  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+  63 |   let left = x + 14, top = y - H / 2;
+  64 |   if (containerRef.current) {
+> 65 |     const r = containerRef.current.getBoundingClientRect();
+     |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  66 |     if (left + W > r.width - 8) left = x - W - 14;
+  67 |     if (top < 4) top = 4;
+  68 |     if (top + H > r.height - 4) top = r.height - H - 4;                                                                                                                                                                                                                                                                                                                                                      react-hooks/refs
+  135:21  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  133 |
+  134 |   // Reset on data change
+> 135 |   useEffect(() => { setHovered(null); setClicked(null); }, [dataA, dataB]);
+      |                     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  136 |
+  137 |   const ptsA = useMemo(() => toSVG(dataA, w, height, PAD_X, PAD_Y), [dataA, w, height]);
+  138 |   const ptsB = useMemo(() => toSVG(dataB, w, height, PAD_X, PAD_Y), [dataB, w, height]);  react-hooks/set-state-in-effect
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\components\Sidebar.jsx
+  3:2  error  Parsing error: Unexpected token <<
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\components\SplashScreen.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+  7:10  error  'phase' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\layouts\DashboardLayout.jsx
+  6:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\Analytics.jsx
+  8:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\Claims.jsx
+  9:2  error  Parsing error: Unexpected token <<
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\Dashboard.jsx
+   1:27  error  'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   6:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  54:57  error  'Icon' is defined but never used                                                no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\DeepfakeDetection.jsx
+  7:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\FraudAlerts.jsx
+   3:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                 no-unused-vars
+  47:10  error    'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                       no-unused-vars
+  65:6   warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\FraudLens.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\NetworkGraph.jsx
+    1:46  error    'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                no-unused-vars
+    8:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                 no-unused-vars
+  166:6   warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  318:28  error    'l' is defined but never used                                                                                 no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\Policies.jsx
+  8:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\pages\Users.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+   43:5   error  Error: Cannot reassign variable after render completes
+
+Reassigning `currentOffset` after render has completed can cause inconsistent behavior on subsequent renders. Consider using state instead.
+
+  41 |     const pct = total > 0 ? (item.val / total) * 100 : 0;
+  42 |     const segment = { pct, color: item.color, off: currentOffset, label: item.label };
+> 43 |     currentOffset += pct;
+     |     ^^^^^^^^^^^^^ Cannot reassign `currentOffset` after render completes
+  44 |     return segment;
+  45 |   });
+  46 |   const [hovered, setHovered] = React.useState(null);  react-hooks/immutability
+  169:9   error  'generateMockCsvEntries' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     no-unused-vars
+
+E:\Hackathon Project\insurance-fraud-detection\frontend\src\utils\api.js
+  137:2  error  Parsing error: Unexpected token <<
+
+Γ£û 29 problems (27 errors, 2 warnings)
+

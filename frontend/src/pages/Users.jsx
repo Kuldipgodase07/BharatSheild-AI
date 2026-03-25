@@ -128,20 +128,41 @@ export default function Users() {
   const [fullResult, setFullResult] = useState(null);
   const PER_PAGE = 10;
 
-  const handleCsvUpload = (e) => {
+  const handleCsvUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file) { alert('No dataset is given. Please select a valid CSV or Excel file to train.'); return; }
     setTrainingFile(file.name);
     setIsTraining(true);
     setTrainingStep(0);
-    // Faster training phases: total ~3.5s
-    setTimeout(() => setTrainingStep(1), 700);
-    setTimeout(() => setTrainingStep(2), 1800);
-    setTimeout(() => {
-      setTrainingStep(3);
-      generateMockCsvEntries();
-      setTimeout(() => setIsTraining(false), 1500);
-    }, 3000);
+    
+    try {
+      setTimeout(() => setTrainingStep(1), 700); // Analysis Phase
+      const fd = new FormData();
+      fd.append('file', file);
+      
+      const res = await fetch('http://localhost:8000/api/v1/train-dataset', {
+        method: 'POST',
+        body: fd
+      });
+      
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "Dataset integration failed.");
+      }
+      
+      setTrainingStep(2); // Model Retraining start
+      
+      setTimeout(() => {
+        setTrainingStep(3); // Complete
+        fetchUsers(); // Actual live reload of datagrid!
+        setTimeout(() => setIsTraining(false), 1500);
+      }, 2500);
+      
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit training dataset: " + err.message);
+      setIsTraining(false);
+    }
     e.target.value = null;
   };
 

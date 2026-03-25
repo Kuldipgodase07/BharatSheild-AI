@@ -134,6 +134,25 @@ export const verifyDocument = async (imagePath, referencePath = null) => {
   }
 };
 
+export const verifyDocumentUpload = async (file, docType = null) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (docType) {
+      formData.append('doc_type', docType);
+    }
+    const response = await api.post('/api/v1/verify-document-upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error verifying document upload:', error);
+    throw error;
+  }
+};
+
 export const analyzeDocumentComprehensive = async (file) => {
   try {
     const formData = new FormData();
@@ -189,5 +208,22 @@ export const getForensicReport = async (claimId) => {
 // Mock data generators for fallback
 export const generateMockClaims = () => [];
 export const generateMockAnalytics = () => ({});
+
+export const analyzeFraudLens = async (file, docType = 'auto_insurance') => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('doc_type', docType);
+    const response = await api.post('/api/v1/fraudlens/analyze', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error in analyzeFraudLens:', error);
+    throw error;
+  }
+};
 
 export default api;

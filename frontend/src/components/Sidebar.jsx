@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Users, AlertTriangle, Menu, X, ShieldAlert, LogOut, Settings, BrainCircuit, BarChart2, User, Scan } from 'lucide-react';
+import { LayoutDashboard, FileText, Users, AlertTriangle, Menu, X, ShieldAlert, LogOut, Settings, BrainCircuit, BarChart2, User, Scan, Network } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -81,7 +81,9 @@ export default function Sidebar() {
     { name: 'Policies', href: '/policies', icon: Users },
     { name: 'Analytics', href: '/analytics', icon: BarChart2 },
     { name: 'Forensic Scan', href: '/forensic', icon: Scan },
+    { name: 'Network Graph', href: '/network-graph', icon: Network },
     { name: 'Users', href: '/users', icon: User },
+    { name: 'FraudLens AI', href: '/fraudlens', icon: BrainCircuit },
   ];
 
   return (

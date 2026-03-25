@@ -6,7 +6,7 @@ import {
   ShieldCheck, Calendar, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getClaims, predictFraud, detectAnomaly, generateMockClaims, verifyDocument, createClaim, analyzeDocumentComprehensive } from '../utils/api';
+import { getClaims, predictFraud, detectAnomaly, generateMockClaims, verifyDocument, createClaim, analyzeDocumentComprehensive, verifyDocumentUpload } from '../utils/api';
 
 const claimsData = [
   { id: 'CLM-1092', holder: 'John Doe', type: 'Auto Collision', amount: 15400, date: '2026-03-24', status: 'Under Review', riskScore: 94, adjuster: 'Sarah K.' },
@@ -73,6 +73,8 @@ export default function Claims() {
   const [showModal, setShowModal] = useState(false);
   const [analyzingClaim, setAnalyzingClaim] = useState(null);
   const [showDocModal, setShowDocModal] = useState(false);
+  const [docFile, setDocFile] = useState(null);
+  const [docType, setDocType] = useState('Medical Report');
   const [docImagePath, setDocImagePath] = useState('');
   const [docReferencePath, setDocReferencePath] = useState('');
   const [docResult, setDocResult] = useState(null);
@@ -82,6 +84,9 @@ export default function Claims() {
   const [newHolder, setNewHolder] = useState('');
   const [newType, setNewType] = useState('');
   const [newAmount, setNewAmount] = useState('');
+  const [newAge, setNewAge] = useState('');
+  const [newHistory, setNewHistory] = useState('');
+  const [newDuration, setNewDuration] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch claims data on component mount
@@ -156,10 +161,15 @@ export default function Claims() {
   const handleSubmitClaim = async () => {
     try {
       if (!newHolder || !newType || !newAmount) return;
+      setIsSubmitting(true);
+      await new Promise(resolve => setTimeout(resolve, 3000));
       const created = await createClaim({
         policy_holder: newHolder,
         claim_type: newType,
-        amount: parseFloat(newAmount)
+        amount: parseFloat(newAmount),
+        age: newAge ? parseInt(newAge) : 35,
+        claim_history: newHistory ? parseInt(newHistory) : 1,
+        policy_duration: newDuration ? parseFloat(newDuration) : 2.0
       });
       
       // If a file was selected, run multi-agent analysis immediately
@@ -180,6 +190,11 @@ export default function Claims() {
       setNewType('');
       setNewAmount('');
       setSelectedFile(null);
+      setNewAge('');
+      setNewHistory('');
+      setNewDuration('');
+      setDocFile(null);
+      setDocType('Medical Report');
       // Refresh to see in dashboard
       fetchClaims();
     } catch (err) {
@@ -245,15 +260,22 @@ export default function Claims() {
     setDocClaimId(claimId);
     setDocImagePath('');
     setDocReferencePath('');
+    setDocFile(null);
+    setDocType('Medical Report');
     setDocResult(null);
     setShowDocModal(true);
   };
 
   const handleVerifyDocument = async () => {
-    if (!docImagePath) return;
+    if (!docImagePath && !docFile) return;
     setDocLoading(true);
     try {
-      const result = await verifyDocument(docImagePath, docReferencePath || null);
+      let result;
+      if (docFile) {
+        result = await verifyDocumentUpload(docFile, docType);
+      } else {
+        result = await verifyDocument(docImagePath, docReferencePath || null);
+      }
       setDocResult(result);
     } catch (error) {
       console.error('Document verification failed:', error);
@@ -463,7 +485,7 @@ export default function Claims() {
                       </span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
-                      <span className="text-sm font-bold text-[color:var(--text-main)]">${claim.amount?.toLocaleString() || '0'}</span>
+                      <span className="text-sm font-bold text-[color:var(--text-main)]">₹{claim.amount?.toLocaleString('en-IN') || '0'}</span>
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <span className="text-xs text-[color:var(--text-muted)] font-medium">{claim.date || 'N/A'}</span>
@@ -569,7 +591,7 @@ export default function Claims() {
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={{ type: 'spring', stiffness: 280, damping: 22 }}
               onClick={e => e.stopPropagation()}
-              className="relative overflow-hidden rounded-2xl p-8 w-full max-w-lg"
+              className="relative overflow-y-auto rounded-2xl p-8 w-full max-w-lg max-h-[90vh]"
               style={{ background: 'linear-gradient(135deg, #160d09 0%, #110906 100%)', border: '1px solid rgba(245,85,15,0.2)', boxShadow: '0 40px 100px rgba(0,0,0,0.6), 0 0 60px rgba(245,85,15,0.1)' }}
             >
               <div className="absolute -right-16 -top-16 w-48 h-48 bg-orange-700/20 blur-3xl rounded-full" />
@@ -580,7 +602,10 @@ export default function Claims() {
                 {[
                   { label: 'Policyholder Name', placeholder: 'Full legal name...', value: newHolder, onChange: e => setNewHolder(e.target.value) },
                   { label: 'Claim Type', placeholder: 'Auto / Medical / Property...', value: newType, onChange: e => setNewType(e.target.value) },
-                  { label: 'Claim Amount ($)', placeholder: '0.00', value: newAmount, onChange: e => setNewAmount(e.target.value) },
+                  { label: 'Claim Amount (₹)', placeholder: '0.00', value: newAmount, onChange: e => setNewAmount(e.target.value) },
+                  { label: 'Age', placeholder: 'e.g., 35', value: newAge, onChange: e => setNewAge(e.target.value) },
+                  { label: 'Past Claims Count', placeholder: 'e.g., 0 for clean history', value: newHistory, onChange: e => setNewHistory(e.target.value) },
+                  { label: 'Policy Duration (Years)', placeholder: 'e.g., 2.5', value: newDuration, onChange: e => setNewDuration(e.target.value) },
                 ].map(field => (
                   <div key={field.label}>
                     <label className="text-xs font-bold text-[color:var(--text-muted)] uppercase tracking-widest mb-1.5 block">{field.label}</label>
@@ -595,6 +620,7 @@ export default function Claims() {
                 ))}
 
                 <div className="pt-2">
+
                   <label className="text-xs font-bold text-[color:var(--text-muted)] uppercase tracking-widest mb-3 block">Document Verification</label>
                   <div 
                     onClick={() => document.getElementById('new-claim-upload').click()}
@@ -617,6 +643,7 @@ export default function Claims() {
                       {selectedFile ? selectedFile.name : 'Upload Claim Document (Image/PDF)'}
                     </p>
                     <p className="text-[9px] text-slate-600 mt-1 uppercase tracking-tighter">Multi-agent analysis will trigger on save</p>
+
                   </div>
                 </div>
 
@@ -627,10 +654,15 @@ export default function Claims() {
                   <button 
                     onClick={handleSubmitClaim}
                     disabled={isSubmitting || !newHolder || !newType || !newAmount}
-                    className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2" 
+                    className="flex-1 py-3 px-2 rounded-xl text-xs sm:text-sm font-bold text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2" 
                     style={{ background: 'linear-gradient(135deg, #f5550f, #ff8a50)', boxShadow: '0 8px 32px rgba(245,85,15,0.4)' }}
                   >
-                    {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Submit Claim'}
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin shrink-0" />
+                        <span className="animate-pulse">🧠 Running AI...</span>
+                      </>
+                    ) : 'Submit Claim'}
                   </button>
                 </div>
               </div>
@@ -670,78 +702,55 @@ export default function Claims() {
               {docClaimId && (
                 <p className="text-xs text-[color:var(--text-muted)] mb-4">Claim: <span className="text-orange-300 font-bold">{docClaimId}</span></p>
               )}
-              <div className="space-y-3 relative z-10">
-                <div className="p-4 rounded-xl border border-dashed border-orange-500/30 bg-orange-500/5 flex flex-col items-center gap-3">
-                  <UploadCloud className="w-8 h-8 text-orange-500/50" />
-                  <p className="text-xs text-[color:var(--text-muted)] text-center">Upload claim document (PDF/Image) for multi-agent AI analysis</p>
+
+
+
+              <div className="space-y-4 relative z-10">
+                {/* Document Type Dropdown */}
+                <div className="relative">
+                  <select 
+                    value={docType}
+                    onChange={e => setDocType(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl text-sm font-bold text-[color:var(--text-main)] focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all cursor-pointer"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
+                  >
+                    <option value="Medical Report" className="bg-slate-900">Medical Report / Invoice</option>
+                    <option value="Vehicle Damage" className="bg-slate-900">Vehicle Repair / Damage Estimate</option>
+                    <option value="Identity Proof" className="bg-slate-900">Driver's License / Identity Proof</option>
+                    <option value="Policy Document" className="bg-slate-900">Policy Document</option>
+                    <option value="Other" className="bg-slate-900">Other Document</option>
+                  </select>
+                </div>
+
+                <div className="relative group">
                   <input 
                     type="file" 
-                    onChange={e => setSelectedFile(e.target.files[0])}
-                    className="hidden" 
-                    id="doc-upload"
+                    accept="image/*,.pdf"
+                    onChange={e => setDocFile(e.target.files[0])}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
                   />
-                  <label 
-                    htmlFor="doc-upload" 
-                    className="px-4 py-2 rounded-lg bg-orange-500/10 border border-orange-500/30 text-[11px] font-bold text-orange-500 cursor-pointer hover:bg-orange-500/20 transition-all"
-                  >
-                    {selectedFile ? selectedFile.name : 'Select File'}
-                  </label>
+                  <div className="w-full px-4 py-8 rounded-xl text-center border-2 border-dashed transition-all flex flex-col items-center justify-center gap-3"
+                       style={{ borderColor: docFile ? 'rgba(16,185,129,0.5)' : 'rgba(245,85,15,0.3)', background: docFile ? 'rgba(16,185,129,0.05)' : 'rgba(245,85,15,0.02)' }}>
+                    {docFile ? (
+                      <>
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                        <span className="text-sm font-bold text-emerald-400">{docFile.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="w-8 h-8 text-[color:var(--text-muted)] group-hover:text-orange-500 transition-colors hover:scale-110" />
+                        <span className="text-sm font-medium text-[color:var(--text-main)]">Click to browse or drag file here</span>
+                        <span className="text-[10px] uppercase tracking-widest text-[color:var(--text-muted)] font-bold">Max size: 10MB</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-
-                <button
-                  onClick={handleComprehensiveAnalysis}
-                  disabled={!selectedFile || docLoading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
-                  style={{ background: 'linear-gradient(135deg,#f5550f,#ff8a50)', boxShadow: '0 6px 24px rgba(245,85,15,0.3)' }}
-                >
-                  {docLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                  Run Multi-Agent Analysis
-                </button>
-
-                {comprehensiveResult && (
-                   <motion.div 
-                    initial={{ opacity: 0, height: 0 }} 
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="p-4 rounded-xl bg-black/40 border border-white/5 space-y-2"
-                   >
-                     <div className="flex justify-between items-center">
-                       <span className="text-[10px] font-bold uppercase text-slate-500">Fraud Score</span>
-                       <span className={`text-sm font-black ${comprehensiveResult.fraud_score > 70 ? 'text-rose-500' : comprehensiveResult.fraud_score > 40 ? 'text-amber-500' : 'text-emerald-500'}`}>
-                         {comprehensiveResult.fraud_score}/100
-                       </span>
-                     </div>
-                     <div className="flex justify-between items-center">
-                       <span className="text-[10px] font-bold uppercase text-slate-500">Risk Level</span>
-                       <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-full ${comprehensiveResult.risk_level === 'critical' ? 'bg-rose-500/20 text-rose-500' : 'bg-orange-500/20 text-orange-500'}`}>
-                         {comprehensiveResult.risk_level}
-                       </span>
-                     </div>
-                     {comprehensiveResult.recommendation && (
-                       <p className="text-[11px] text-[color:var(--text-muted)] italic">
-                         "{comprehensiveResult.recommendation}"
-                       </p>
-                     )}
-                   </motion.div>
-                )}
-
-                <div className="relative py-2">
-                  <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/5"></div></div>
-                  <div className="relative flex justify-center"><span className="bg-[#110906] px-2 text-[10px] font-bold text-slate-700 uppercase">Or use server path</span></div>
-                </div>
-
-                <input
-                  value={docImagePath}
-                  onChange={e => setDocImagePath(e.target.value)}
-                  placeholder="Document image path (server path)"
-                  className="w-full px-4 py-3 rounded-xl text-sm font-medium text-[color:var(--text-main)] placeholder-slate-700 focus:outline-none focus:ring-1 focus:ring-orange-600 transition-all"
-                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', boxShadow: 'var(--shadow-card)' }}
-                />
-                
                 <button
                   onClick={handleVerifyDocument}
-                  disabled={!docImagePath || docLoading}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white/70 transition-all disabled:opacity-50"
-                  style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  disabled={(!docImagePath && !docFile) || docLoading}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg,#f5550f,#ff8a50)', boxShadow: '0 6px 24px rgba(245,85,15,0.3)' }}
+
                 >
                   {docLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <UploadCloud className="w-3.5 h-3.5" />}
                   Legacy Verification

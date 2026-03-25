@@ -394,16 +394,21 @@ def verify_document_endpoint(request: DocumentVerifyRequest):
     return result
 
 @app.post("/api/v1/verify-document-upload", response_model=DocumentVerifyResponse)
-def verify_document_upload(file: UploadFile = File(...)):
+def verify_document_upload(file: UploadFile = File(...), doc_type: Optional[str] = Form(None)):
     """
     Industry-based document verification endpoint handling raw file uploads.
     Extracts EXIF metadata or PDF digital signatures to determine tampering.
+    `doc_type` indicates the expected type of document (e.g., Medical Report).
     """
+    print(f"🕵️ AI ENGINE: Verifying document upload -> [{file.filename}] Expected Type: [{doc_type or 'Unknown'}]")
+    
     with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp:
         shutil.copyfileobj(file.file, tmp)
         tmp_path = tmp.name
         
     try:
+        # In a full OCR/Vision model, doc_type would be passed to an LLM context
+        # e.g., result = verify_document(tmp_path, expected_type=doc_type)
         result = verify_document(tmp_path)
     finally:
         if os.path.exists(tmp_path):
@@ -492,6 +497,28 @@ def add_user(
             past_claims=past_claims
         )
         
+        # Dynamically append this new user to the model's training dataset!
+        try:
+            import pandas as pd
+            csv_path = os.path.join(os.path.dirname(__file__), 'insuranceFraud_Dataset.csv')
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path)
+                new_row = {c: 0 for c in df.columns}
+                new_row.update({
+                    'age': age,
+                    'insured_sex': gender.upper(),
+                    'insured_occupation': occupation,
+                    'policy_annual_premium': sum_insured * 1000,
+                    'total_claim_amount': claim_amount * 1000,
+                    'fraud_reported': 'Y' if is_fraud else 'N'
+                })
+                # Use DataFrame constructor for the new row to prevent warning
+                df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+                df.to_csv(csv_path, index=False)
+                print(f"Dynamically appended {name} to {csv_path} for continuous learning.")
+        except Exception as e:
+            print(f"Failed to append to dataset: {e}")
+
         # If model detects fraud, create a high-priority alert in the Alert Center
         if is_fraud or risk_score >= 60:
             Alert.objects.create(
@@ -734,6 +761,9 @@ class SimpleClaimIn(BaseModel):
     policy_holder: str
     claim_type: str
     amount: float
+    age: Optional[int] = 35
+    claim_history: Optional[int] = 1
+    policy_duration: Optional[float] = 2.0
 
 @app.get("/api/v1/claims")
 def list_claims(skip: int = 0, limit: int = 500):
@@ -763,12 +793,12 @@ def create_claim(payload: SimpleClaimIn):
     # Run AI fraud scoring
     try:
         pred = predict_fraud(
-            age=35,
+            age=payload.age,
             claim_amount=payload.amount,
             policy_type=payload.claim_type.split()[0] if payload.claim_type else "Auto",
             incident_type="Accident",
-            claim_history=1,
-            policy_duration=2.0,
+            claim_history=payload.claim_history,
+            policy_duration=payload.policy_duration,
             deductible=500
         )
         risk_score = pred.get("risk_score", 50) if pred else 50
@@ -830,6 +860,7 @@ def create_claim(payload: SimpleClaimIn):
     }
 
 # ───────────────────────────────────────────────────────────
+
 # Industry-Ready Comprehensive Document Analysis (FraudLens)
 # ───────────────────────────────────────────────────────────
 
@@ -1000,5 +1031,146 @@ async def get_forensic_report(claim_id: str):
             },
             "created_at": report.created_at
         }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# FraudLens Multi-Agent System Integration
+# ───────────────────────────────────────────────────────────
+import tempfile
+import shutil
+import subprocess
+import asyncio
+import json
+import sys
+
+@app.post("/api/v1/fraudlens/analyze")
+def fraudlens_analyze(file: UploadFile = File(...), doc_type: str = Form(...)):
+    """Passes an uploaded file to the FraudLens Multi-Agent System."""
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+        
+        try:
+            # Run isolated subprocess to avoid namespace collision with Django's 'core' app
+            script_path = os.path.join(BASE_DIR, 'fraudlens_runner.py')
+            
+            proc = subprocess.run(
+                [sys.executable, script_path, tmp_path, doc_type],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            
+            out_text = proc.stdout.decode('utf-8')
+            stderr_text = proc.stderr.decode('utf-8')
+            
+            # Extract purely the JSON using reliable boundary markers
+            start_idx = out_text.find("FRAUDLENS_JSON_START")
+            end_idx = out_text.find("FRAUDLENS_JSON_END")
+            
+            if start_idx != -1 and end_idx != -1:
+                json_str = out_text[start_idx + len("FRAUDLENS_JSON_START"):end_idx].strip()
+                try:
+                    result_data = json.loads(json_str)
+                    if isinstance(result_data, dict) and "error" in result_data:
+                        raise HTTPException(status_code=500, detail=result_data["error"])
+                    return result_data
+                except json.JSONDecodeError:
+                    raise HTTPException(status_code=500, detail=f"Invalid JSON parsed from FraudLens bounds: {json_str[:200]}")
+            else:
+                if proc.returncode != 0:
+                    err_text = out_text + "\n" + stderr_text
+                    raise HTTPException(status_code=500, detail=f"FraudLens analysis failed to complete: {err_text[:200]}")
+                else:
+                    raise HTTPException(status_code=500, detail=f"Missing FraudLens marker bounds in output: {out_text[:200]}")
+                
+        finally:
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except:
+                    pass
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        trace_str = traceback.format_exc()
+        raise HTTPException(status_code=500, detail=f"Backend Error: {str(e)} \n {trace_str}")
+
+
+
+from fastapi import BackgroundTasks
+
+def retrain_models_task():
+    import subprocess, sys, os
+    try:
+        print("🚀 BACKGROUND TASK: Re-training ML models on new dataset...")
+        model_script = os.path.join(os.path.dirname(__file__), 'fraud_detection_model.py')
+        subprocess.run([sys.executable, model_script], check=True)
+        print("✅ BACKGROUND TASK: ML models successfully retrained!")
+    except Exception as e:
+        print(f"❌ BACKGROUND TASK FAILED: ML retraining aborted. {e}")
+
+@app.post("/api/v1/train-dataset")
+def train_dataset(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    import pandas as pd
+    import uuid
+    import tempfile
+    import shutil
+    import os
+    try:
+        csv_path = os.path.join(os.path.dirname(__file__), 'insuranceFraud_Dataset.csv')
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as tmp:
+            shutil.copyfileobj(file.file, tmp)
+            tmp_path = tmp.name
+
+        try:
+            if file.filename.endswith('.xlsx') or file.filename.endswith('.xls'):
+                uploaded_df = pd.read_excel(tmp_path)
+            else:
+                uploaded_df = pd.read_csv(tmp_path)
+            if os.path.exists(csv_path):
+                base_df = pd.read_csv(csv_path)
+                combined = pd.concat([base_df, uploaded_df], ignore_index=True)
+                combined.to_csv(csv_path, index=False)
+            else:
+                uploaded_df.to_csv(csv_path, index=False)
+
+            for _, row in uploaded_df.iterrows():
+                try:
+                    is_fraud = str(row.get('fraud_reported', 'N')) == 'Y'
+                    AppUser.objects.create(
+                        id=f"USR-{str(uuid.uuid4())[:8].upper()}",
+                        name=str(row.get('insured_occupation', 'Dataset Identity')),
+                        email="batch.imported@dataset.com",
+                        role="Claimant",
+                        status="UNDER_REVIEW" if is_fraud else "ACTIVE",
+                        document_verified=True,
+                        risk_score=95 if is_fraud else 15,
+                        fraud_flag=is_fraud,
+                        age=int(row.get('age', 35)),
+                        marital_status="Unknown",
+                        annual_income="10.0L",
+                        state=str(row.get('policy_state', 'OH')),
+                        channel="Retail",
+                        risk_level="CRITICAL" if is_fraud else "LOW",
+                        gender=str(row.get('insured_sex', 'Male')),
+                        occupation=str(row.get('insured_occupation', 'Unknown')),
+                        policy_type="Auto",
+                        sum_insured=float(row.get('policy_annual_premium', 0)) / 1000,
+                        claim_amount=float(row.get('total_claim_amount', 0)) / 1000,
+                        past_claims=1
+                    )
+                except Exception:
+                    continue
+
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+        background_tasks.add_task(retrain_models_task)
+        return {"status": "success", "message": "Dataset merged. Commencing background model retraining..."}
+
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

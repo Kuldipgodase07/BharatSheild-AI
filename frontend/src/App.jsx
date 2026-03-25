@@ -9,6 +9,8 @@ import FraudAlerts from './pages/FraudAlerts';
 import Analytics from './pages/Analytics';
 import Users from './pages/Users';
 import DeepfakeDetection from './pages/DeepfakeDetection';
+import NetworkGraph from './pages/NetworkGraph';
+import FraudLens from './pages/FraudLens';
 import SplashScreen from './components/SplashScreen';
 
 function App() {
@@ -30,7 +32,9 @@ function App() {
               <Route path="policies" element={<Policies />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="forensic" element={<DeepfakeDetection />} />
+              <Route path="network-graph" element={<NetworkGraph />} />
               <Route path="users" element={<Users />} />
+              <Route path="fraudlens" element={<FraudLens />} />
             </Route>
           </Routes>
         </Router>
