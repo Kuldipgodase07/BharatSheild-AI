@@ -1,7 +1,7 @@
 # BharatShield AI 🛡️
 AI-Powered Insurance Fraud Detection Platform for India  
 > ### Detect Fraud Faster. Investigate Smarter. Protect Trust.
-> [![Live Demo](https://img.shields.io/badge/Live-Demo-green)](#)   [![GitHub Follow](https://img.shields.io/github/followers/Kuldipgodase07?label=Follow&style=social)](https://github.com/Kuldipgodase07)   [![LinkedIn Connect](https://img.shields.io/badge/-Connect%20on%20LinkedIn-blue?style=flat-square&logo=Linkedin&logoColor=white)](https://www.linkedin.com/)   [![Kuldip Godase](https://img.shields.io/badge/-Kuldip%20Godase-blue?style=flat-square)](https://www.linkedin.com/)  
+> [![Live Demo](https://img.shields.io/badge/Live-Demo-green)](#)   [![GitHub Follow](https://img.shields.io/github/followers/Kuldipgodase07?label=Follow&style=social)](https://github.com/Kuldipgod[...]
 
 BharatShield AI is a full-stack, production-ready platform that helps detect **insurance fraud in real-time** using machine learning, document forensics, and network/network-graph analysis.  
 It is designed to support insurers and investigators with **risk scoring, alerts, analytics**, and scalable deployment-ready infrastructure.
@@ -109,7 +109,7 @@ BharatShield_AI/
 - **Algorithm:** Ensemble (XGBoost + Random Forest)
 - **Dataset:** `data/insuranceFraud_Dataset.csv`
 - **Model Status / Accuracy:** `ml/model_status.json`
-- **Training Command:**
+- **Training Command:
 
 ```bash
 cd ml
@@ -122,7 +122,7 @@ python fraud_detection_model.py --train --data ../data/insuranceFraud_Dataset.cs
 
 | Dashboard | Fraud Alerts | Analytics |
 |----------|--------------|----------|
-| *(Add screenshot here)* | *(Add screenshot here)* | *(Add screenshot here)* |
+| ![Dashboard](data/Picture1.jpg) | ![Fraud Alerts](data/Picture2.jpg) | ![Analytics](data/Picture3.png) |
 
 > Tip: Put images in `docs/screenshots/` and link them like:  
 > `![Dashboard](docs/screenshots/dashboard.png)`
