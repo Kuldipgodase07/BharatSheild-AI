@@ -122,7 +122,7 @@ python fraud_detection_model.py --train --data ../data/insuranceFraud_Dataset.cs
 
 | Dashboard | Fraud Alerts | Analytics |
 |----------|--------------|----------|
-| ![Dashboard](data/Picture1.jpg) | ![Fraud Alerts](data/Picture2.jpg) | ![Analytics](data/Picture3.png) |
+| <img src="data/Picture1.jpg" width="320" alt="Dashboard" /> | <img src="data/Picture2.jpg" width="320" alt="Fraud Alerts" /> | <img src="data/Picture3.png" width="320" alt="Analytics" /> |
 
 > Tip: Put images in `docs/screenshots/` and link them like:  
 > `![Dashboard](docs/screenshots/dashboard.png)`
