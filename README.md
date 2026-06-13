@@ -149,7 +149,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Contact
 
-- **Repository:** `dhekaleprashant673/BharatShield_AI`
+- **Repository:** https://github.com/Kuldipgodase07/BharatSheild-AI
 - **GitHub:** [@Kuldipgodase07](https://github.com/Kuldipgodase07)
 - **Live App:** *(add link here)*
 
